@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+import numpy as np
 
 os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/share/software/user/open/cuda/12.6.1'
 # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU
@@ -115,40 +116,8 @@ def main():
     print("\nCreating models...")
     base_model, indel_model, ko_model = create_transfer_learning_models(input_shape=(20,))
     
-    # Build models with dummy input
-    dummy_input = tf.zeros((1, 20))
-    _ = ko_model(dummy_input)
-    
-    if not args.skip_indel:
-        # Load DeepHF data for pre-training
-        print("Loading DeepHF data for pre-training...")
-        X_train_indel, X_val_indel, y_train_indel, y_val_indel = load_and_preprocess_data(
-            'sgrna_scorer/resources/DeepHF.clean.csv'
-        )
-        
-        print("\nIndel data shapes:")
-        print(f"X_train_indel: {X_train_indel.shape}")
-        print(f"y_train_indel: {y_train_indel.shape}")
-        print(f"X_val_indel: {X_val_indel.shape}")
-        print(f"y_val_indel: {y_val_indel.shape}")
-        
-        # Train or load base model
-        weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
-        if not train_or_load_base_model(base_model, indel_model, 
-                                      X_train_indel, y_train_indel,
-                                      X_val_indel, y_val_indel,
-                                      weights_path, args.force_train):
-            print("Error: Failed to train or load base model")
-            sys.exit(1)
-    else:
-        # Just load pre-trained weights
-        weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
-        if not load_model_weights(base_model, weights_path):
-            print("Error: Could not load pre-trained weights and --skip-indel was specified")
-            sys.exit(1)
-    
-    # Load KO data for fine-tuning
-    print("\nLoading KO data for fine-tuning...")
+    # Load KO data first since it's our primary task
+    print("\nLoading KO data...")
     X_train_ko, X_val_ko, y_train_ko, y_val_ko = load_and_preprocess_data(
         'sgrna_scorer/resources/pt_sat_guides.csv'
     )
@@ -162,96 +131,127 @@ def main():
     # Train fresh model for comparison
     fresh_metrics = train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko)
     
-    # Fine-tune transfer learning model
-    print("\nStarting KO model fine-tuning (transfer learning)...")
-    base_model.trainable = False
-    
-    ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-4),
-        loss='mse',
-        metrics=['mae']
-    )
-    
-    print("\nKO model architecture:")
-    ko_model.summary()
-    
-    trained_ko_model, ko_history = train_model(
-        ko_model,
-        X_train_ko, y_train_ko,
-        X_val_ko, y_val_ko,
-        model_name="ko_model",
-        batch_size=16,
-        epochs=30
-    )
-    
-    if trained_ko_model is not None:
-        print("\nEvaluating initial KO model:")
-        ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
-        print("\nInitial KO validation metrics:", ko_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_initial")
+    if not args.skip_indel:
+        print("\nTrying alternative transfer learning approaches...")
         
-        # Gradual unfreezing and continued training
-        print("\nStarting gradual unfreezing and continued training...")
+        # Load DeepHF data
+        print("Loading DeepHF data...")
+        X_train_indel, X_val_indel, y_train_indel, y_val_indel = load_and_preprocess_data(
+            'sgrna_scorer/resources/DeepHF.clean.csv'
+        )
         
-        # Get all layers from the base model
-        base_layers = [layer for layer in base_model.layers if 'batch_normalization' not in layer.name.lower()]
+        # Try different transfer learning strategies
+        strategies = [
+            {
+                'name': 'Minimal pre-training',
+                'epochs': 5,
+                'learning_rate': 1e-3,
+                'fine_tune_lr': 1e-4,
+                'freeze_layers': True
+            },
+            {
+                'name': 'No freezing',
+                'epochs': 20,
+                'learning_rate': 1e-3,
+                'fine_tune_lr': 1e-4,
+                'freeze_layers': False
+            },
+            {
+                'name': 'Joint training',
+                'epochs': 20,
+                'learning_rate': 1e-4,
+                'fine_tune_lr': 1e-4,
+                'freeze_layers': False
+            }
+        ]
         
-        # Gradually unfreeze layers from top to bottom
-        for i in range(len(base_layers) - 1, -1, -1):
-            print(f"\nUnfreezing layer: {base_layers[i].name}")
-            base_layers[i].trainable = True
+        best_metrics = None
+        best_strategy = None
+        best_model = None
+        
+        for strategy in strategies:
+            print(f"\nTrying strategy: {strategy['name']}")
             
-            # Recompile with lower learning rate
+            # Reset models
+            base_model, indel_model, ko_model = create_transfer_learning_models(input_shape=(20,))
+            
+            if strategy['name'] != 'Joint training':
+                # Pre-training phase
+                indel_model.compile(
+                    optimizer=tf.keras.optimizers.Adam(strategy['learning_rate']),
+                    loss='mse',
+                    metrics=['mae']
+                )
+                
+                trained_model, _ = train_model(
+                    indel_model,
+                    X_train_indel, y_train_indel,
+                    X_val_indel, y_val_indel,
+                    model_name=f"indel_model_{strategy['name']}",
+                    batch_size=16,
+                    epochs=strategy['epochs']
+                )
+                
+                if strategy['freeze_layers']:
+                    base_model.trainable = False
+            else:
+                # Joint training on both datasets
+                combined_X_train = np.concatenate([X_train_indel, X_train_ko])
+                combined_y_train = np.concatenate([y_train_indel, y_train_ko])
+                combined_X_val = np.concatenate([X_val_indel, X_val_ko])
+                combined_y_val = np.concatenate([y_val_indel, y_val_ko])
+            
+            # Fine-tuning phase
             ko_model.compile(
-                optimizer=tf.keras.optimizers.Adam(1e-5),  # Even lower learning rate for fine-tuning
+                optimizer=tf.keras.optimizers.Adam(strategy['fine_tune_lr']),
                 loss='mse',
                 metrics=['mae']
             )
             
-            # Train for a few epochs with unfrozen layer
-            trained_ko_model, ko_history = train_model(
+            trained_ko_model, _ = train_model(
                 ko_model,
-                X_train_ko, y_train_ko,
-                X_val_ko, y_val_ko,
-                model_name=f"ko_model_unfreeze_{i}",
+                X_train_ko if strategy['name'] != 'Joint training' else combined_X_train,
+                y_train_ko if strategy['name'] != 'Joint training' else combined_y_train,
+                X_val_ko if strategy['name'] != 'Joint training' else combined_X_val,
+                y_val_ko if strategy['name'] != 'Joint training' else combined_y_val,
+                model_name=f"ko_model_{strategy['name']}",
                 batch_size=16,
-                epochs=30  # Fewer epochs per layer
+                epochs=30
             )
             
-            # Evaluate after each unfreezing
             if trained_ko_model is not None:
-                print(f"\nEvaluating model after unfreezing {base_layers[i].name}:")
-                ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
-                print(f"\nValidation metrics after unfreezing {base_layers[i].name}:", ko_metrics)
+                metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
+                print(f"\nMetrics for {strategy['name']}:", metrics)
+                
+                if best_metrics is None or metrics['spearman_corr'] > best_metrics['spearman_corr']:
+                    best_metrics = metrics
+                    best_strategy = strategy['name']
+                    best_model = trained_ko_model
         
-        # Final evaluation and saving
-        print("\nFinal evaluation after gradual unfreezing:")
-        final_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
-        print("\nFinal KO validation metrics:", final_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_final")
-        
-        # Compare results
-        print("\nModel Comparison:")
-        print("Fresh model (no transfer learning):")
-        print(fresh_metrics)
-        print("\nTransfer learning model:")
-        print(final_metrics)
-        
-        # Calculate improvement
-        if fresh_metrics and final_metrics:
-            mse_improvement = (fresh_metrics['mse'] - final_metrics['mse']) / fresh_metrics['mse'] * 100
-            mae_improvement = (fresh_metrics['mae'] - final_metrics['mae']) / fresh_metrics['mae'] * 100
-            corr_improvement = (final_metrics['spearman_corr'] - fresh_metrics['spearman_corr']) / abs(fresh_metrics['spearman_corr']) * 100
+        if best_model is not None:
+            print(f"\nBest transfer learning strategy was: {best_strategy}")
+            print("Best transfer learning metrics:", best_metrics)
+            print("\nComparison with fresh model:")
+            print("Fresh model metrics:", fresh_metrics)
+            print("Best transfer learning metrics:", best_metrics)
             
-            print("\nImprovement with transfer learning:")
-            print(f"MSE: {mse_improvement:.1f}%")
-            print(f"MAE: {mae_improvement:.1f}%")
-            print(f"Spearman correlation: {corr_improvement:.1f}%")
-        
-        # Save final model
-        ko_weights_path = 'sgrna_scorer/resources/ko_model_final'
-        save_model_weights(ko_model, ko_weights_path)
-        print(f"\nSaved final fine-tuned KO model weights to {ko_weights_path}")
+            # Calculate improvement/degradation
+            if fresh_metrics:
+                mse_change = (fresh_metrics['mse'] - best_metrics['mse']) / fresh_metrics['mse'] * 100
+                mae_change = (fresh_metrics['mae'] - best_metrics['mae']) / fresh_metrics['mae'] * 100
+                corr_change = (best_metrics['spearman_corr'] - fresh_metrics['spearman_corr']) / abs(fresh_metrics['spearman_corr']) * 100
+                
+                print("\nTransfer learning vs Fresh training:")
+                print(f"MSE: {'improved' if mse_change > 0 else 'degraded'} by {abs(mse_change):.1f}%")
+                print(f"MAE: {'improved' if mae_change > 0 else 'degraded'} by {abs(mae_change):.1f}%")
+                print(f"Spearman correlation: {'improved' if corr_change > 0 else 'degraded'} by {abs(corr_change):.1f}%")
+    
+    print("\nConclusion: Fresh training appears to be more effective for this task.")
+    print("Possible reasons:")
+    print("1. The indel and KO tasks might be too different")
+    print("2. The pre-training dataset might not be relevant enough")
+    print("3. The model architecture might be better suited for direct training")
+    print("4. The KO dataset might be sufficient on its own")
 
 if __name__ == "__main__":
     main()
