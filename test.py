@@ -1,6 +1,7 @@
 import os
 import sys
 import argparse
+from datetime import datetime
 
 os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/share/software/user/open/cuda/12.6.1'
 os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU
@@ -64,8 +65,8 @@ def train_or_load_base_model(base_model, indel_model, X_train, y_train, X_val, y
         X_train, y_train,
         X_val, y_val,
         model_name="indel_model",
-        batch_size=16,
-        epochs=20
+        batch_size=32,
+        epochs=50
     )
     
     if trained_model is not None:
@@ -184,7 +185,7 @@ def main():
     # Load indel data
     print("\nLoading indel data...")
     X_train_indel, X_val_indel, y_train_indel, y_val_indel, indel_normalizer, X_indel_orig, y_indel_orig = load_and_preprocess_data(
-        'sgrna_scorer/resources/DeepHF.clean.csv',
+        'sgrna_scorer/resources/deepspcas9.clean.csv',
         invert_targets=False
     )
     
@@ -249,13 +250,10 @@ def main():
         print("Error: Failed to train or load base model")
         sys.exit(1)
     
-    # Fine-tune on normalized KO data
-    print("\nStarting KO model fine-tuning...")
-    if not args.no_freeze:
-        base_model.trainable = False
-        print("Base model weights are frozen")
-    else:
-        print("Base model weights are trainable")
+    # Initial fine-tuning on normalized KO data
+    print("\nStarting initial KO model fine-tuning...")
+    base_model.trainable = False
+    print("Base model weights are initially frozen")
     
     ko_model.compile(
         optimizer=tf.keras.optimizers.Adam(1e-4),
@@ -266,21 +264,75 @@ def main():
     print("\nKO model architecture:")
     ko_model.summary()
     
+    # Only use ModelCheckpoint callback for transfer learning
+    transfer_callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(
+            'sgrna_scorer/resources/checkpoints/ko_model_transfer_{epoch:02d}.weights.h5',
+            monitor='val_loss',
+            save_best_only=True,
+            save_weights_only=True
+        ),
+        tf.keras.callbacks.TensorBoard(
+            log_dir=f'logs/ko_model_transfer_{datetime.now().strftime("%Y%m%d-%H%M%S")}',
+            histogram_freq=1
+        )
+    ]
+    
+    # Initial training with frozen base
     trained_ko_model, ko_history = train_model(
         ko_model,
         X_train_ko, y_train_ko,
         X_val_ko, y_val_ko,
-        model_name="ko_model_transfer",
-        batch_size=32,
-        epochs=50
+        model_name="ko_model_transfer_initial",
+        batch_size=64,
+        epochs=200,
+        callbacks=transfer_callbacks,
+        use_base_callbacks=False
     )
     
+    # Gradual unfreezing and continued training
+    print("\nStarting gradual unfreezing and continued training...")
+    
+    # Get all layers from the base model
+    base_layers = [layer for layer in base_model.layers if 'batch_normalization' not in layer.name.lower()]
+    
+    # Gradually unfreeze layers from top to bottom
+    for i in range(len(base_layers) - 1, -1, -1):
+        print(f"\nUnfreezing layer: {base_layers[i].name}")
+        base_layers[i].trainable = True
+        
+        # Recompile with lower learning rate
+        ko_model.compile(
+            optimizer=tf.keras.optimizers.Adam(1e-5),  # Lower learning rate for fine-tuning
+            loss='mse',
+            metrics=['mae']
+        )
+        
+        # Train for a few epochs with unfrozen layer
+        trained_ko_model, ko_history = train_model(
+            ko_model,
+            X_train_ko, y_train_ko,
+            X_val_ko, y_val_ko,
+            model_name=f"ko_model_unfreeze_{i}",
+            batch_size=64,
+            epochs=50,
+            callbacks=transfer_callbacks,
+            use_base_callbacks=False
+        )
+        
+        # Evaluate after each unfreezing
+        if trained_ko_model is not None:
+            print(f"\nEvaluating model after unfreezing {base_layers[i].name}:")
+            metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
+            print(f"\nValidation metrics after unfreezing {base_layers[i].name}:", metrics)
+    
+    # Final evaluation
     if trained_ko_model is not None:
-        print("\nEvaluating transfer learning KO model:")
-        transfer_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
+        print("\nFinal evaluation after gradual unfreezing:")
+        transfer_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
         print("\nTransfer learning KO validation metrics:", transfer_metrics)
         plot_predictions(trained_ko_model, X_val_ko, y_val_ko, 
-                        model_name="ko_model_transfer", normalizer=ko_normalizer)
+                        model_name="ko_model_transfer_final")
 
 if __name__ == "__main__":
     main()

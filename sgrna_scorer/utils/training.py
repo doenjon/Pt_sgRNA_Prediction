@@ -66,14 +66,15 @@ def plot_training_history(history, model_name):
 
 def train_model(model, X_train, y_train, X_val, y_val, 
                 model_name="model", batch_size=32, epochs=50,
-                callbacks=None):
+                callbacks=None, use_base_callbacks=True):
     """Train a model with monitoring and callbacks."""
     if callbacks is None:
         callbacks = []
     
-    # Add basic callbacks
-    base_callbacks = create_callbacks(model_name)
-    callbacks.extend(base_callbacks)
+    # Only add base callbacks if requested
+    if use_base_callbacks:
+        base_callbacks = create_callbacks(model_name)
+        callbacks.extend(base_callbacks)
     
     try:
         history = model.fit(
