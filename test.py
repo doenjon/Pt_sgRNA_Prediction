@@ -27,7 +27,7 @@ if gpus:
             )
         print("GPU memory limited to 512MB")
     except RuntimeError as e:
-        print(f"Error setting GPU memory limit: {e}")
+        print("Error setting GPU memory limit:", str(e))
         print("Falling back to CPU")
         os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
@@ -85,17 +85,22 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     # Create new models with smaller size
     _, _, fresh_ko_model = create_transfer_learning_models(
         input_shape=(20,),
-        num_filters=128,  # Reduced from 256
-        num_dense_neurons=64  # Reduced from 128
+        num_filters=128,
+        num_dense_neurons=64
     )
     
     # Build model with dummy input
     dummy_input = tf.zeros((1, 20))
     _ = fresh_ko_model(dummy_input)
     
-    # Compile fresh model
+    # Compile fresh model with gradient clipping
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=1e-3,  # Fixed initial learning rate
+        clipnorm=1.0  # Add gradient clipping
+    )
+    
     fresh_ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-3),
+        optimizer=optimizer,
         loss='mse',
         metrics=['mae']
     )
@@ -103,14 +108,32 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     print("\nFresh KO model architecture:")
     fresh_ko_model.summary()
     
-    # Train fresh model with smaller batch size
+    # Add callbacks for training stability
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=15,
+            restore_best_weights=True,
+            min_delta=0.001
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+            min_delta=0.001
+        )
+    ]
+    
+    # Train fresh model with slightly larger batch size
     trained_fresh_model, fresh_history = train_model(
         fresh_ko_model,
         X_train_ko, y_train_ko,
         X_val_ko, y_val_ko,
         model_name="fresh_ko_model",
-        batch_size=8,  # Reduced from 16
-        epochs=100
+        batch_size=32,
+        epochs=100,
+        callbacks=callbacks
     )
     
     if trained_fresh_model is not None:
@@ -171,19 +194,12 @@ def main():
     print(f"X_val_indel: {X_val_indel.shape}")
     print(f"y_val_indel: {y_val_indel.shape}")
     
-    # Train on raw indel data
-    print("\n=== Training on raw indel data ===")
-    raw_indel_metrics = train_fresh_ko_model(
-        X_indel_orig[:X_train_indel.shape[0]], y_indel_orig[:y_train_indel.shape[0]],
-        X_indel_orig[X_train_indel.shape[0]:], y_indel_orig[y_train_indel.shape[0]:]
-    )
-    
-    # Train on normalized indel data
-    print("\n=== Training on normalized indel data ===")
-    norm_indel_metrics = train_fresh_ko_model(
-        X_train_indel, y_train_indel,
-        X_val_indel, y_val_indel
-    )
+    # # Train on normalized indel data
+    # print("\n=== Training on normalized indel data ===")
+    # norm_indel_metrics = train_fresh_ko_model(
+    #     X_train_indel, y_train_indel,
+    #     X_val_indel, y_val_indel
+    # )
     
     # Load KO data
     print("\nLoading KO data...")
@@ -198,30 +214,73 @@ def main():
     print(f"X_val_ko: {X_val_ko.shape}")
     print(f"y_val_ko: {y_val_ko.shape}")
     
-    # Train on raw KO data
-    print("\n=== Training on raw KO data ===")
-    raw_ko_metrics = train_fresh_ko_model(
-        X_ko_orig[:X_train_ko.shape[0]], y_ko_orig[:y_train_ko.shape[0]],
-        X_ko_orig[X_train_ko.shape[0]:], y_ko_orig[y_train_ko.shape[0]:]
+    # # Train on normalized KO data
+    # print("\n=== Training on normalized KO data ===")
+    # norm_ko_metrics = train_fresh_ko_model(
+    #     X_train_ko, y_train_ko,
+    #     X_val_ko, y_val_ko
+    # )
+    
+    # # Print normalized model results
+    # print("\n=== Normalized Model Results ===")
+    # print("\nNormalized Indel Model Metrics:")
+    # print(norm_indel_metrics)
+    # print("\nNormalized KO Model Metrics:")
+    # print(norm_ko_metrics)
+    
+    # Now do transfer learning with normalized data
+    print("\n=== Starting Transfer Learning on Normalized Data ===")
+    args = parse_args()
+    
+    # Create models for transfer learning
+    print("\nCreating models for transfer learning...")
+    base_model, indel_model, ko_model = create_transfer_learning_models(input_shape=(20,))
+    
+    # Build models with dummy input
+    dummy_input = tf.zeros((1, 20))
+    _ = ko_model(dummy_input)
+    
+    # Train or load base model on normalized indel data
+    weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
+    if not train_or_load_base_model(base_model, indel_model, 
+                                  X_train_indel, y_train_indel,
+                                  X_val_indel, y_val_indel,
+                                  weights_path, args.force_train):
+        print("Error: Failed to train or load base model")
+        sys.exit(1)
+    
+    # Fine-tune on normalized KO data
+    print("\nStarting KO model fine-tuning...")
+    if not args.no_freeze:
+        base_model.trainable = False
+        print("Base model weights are frozen")
+    else:
+        print("Base model weights are trainable")
+    
+    ko_model.compile(
+        optimizer=tf.keras.optimizers.Adam(1e-4),
+        loss='mse',
+        metrics=['mae']
     )
     
-    # Train on normalized KO data
-    print("\n=== Training on normalized KO data ===")
-    norm_ko_metrics = train_fresh_ko_model(
+    print("\nKO model architecture:")
+    ko_model.summary()
+    
+    trained_ko_model, ko_history = train_model(
+        ko_model,
         X_train_ko, y_train_ko,
-        X_val_ko, y_val_ko
+        X_val_ko, y_val_ko,
+        model_name="ko_model_transfer",
+        batch_size=32,
+        epochs=50
     )
     
-    # Print comparison of all results
-    print("\n=== Final Results ===")
-    print("\nRaw Indel Model Metrics:")
-    print(raw_indel_metrics)
-    print("\nNormalized Indel Model Metrics:")
-    print(norm_indel_metrics)
-    print("\nRaw KO Model Metrics:")
-    print(raw_ko_metrics)
-    print("\nNormalized KO Model Metrics:")
-    print(norm_ko_metrics)
+    if trained_ko_model is not None:
+        print("\nEvaluating transfer learning KO model:")
+        transfer_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
+        print("\nTransfer learning KO validation metrics:", transfer_metrics)
+        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, 
+                        model_name="ko_model_transfer", normalizer=ko_normalizer)
 
 if __name__ == "__main__":
     main()

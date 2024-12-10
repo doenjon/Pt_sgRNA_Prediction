@@ -65,9 +65,15 @@ def plot_training_history(history, model_name):
     print(f"Training history plot saved to {plot_path}")
 
 def train_model(model, X_train, y_train, X_val, y_val, 
-                model_name="model", batch_size=32, epochs=50):
+                model_name="model", batch_size=32, epochs=50,
+                callbacks=None):
     """Train a model with monitoring and callbacks."""
-    callbacks = create_callbacks(model_name)
+    if callbacks is None:
+        callbacks = []
+    
+    # Add basic callbacks
+    base_callbacks = create_callbacks(model_name)
+    callbacks.extend(base_callbacks)
     
     try:
         history = model.fit(
@@ -88,25 +94,22 @@ def train_model(model, X_train, y_train, X_val, y_val,
         return None, None
 
 def plot_predictions(model, X_val, y_val, model_name="model", normalizer=None):
-    """Plot predicted vs actual values."""
-    predictions = model.predict(X_val)
-    
-    # Convert back to original scale if normalizer is provided
-    if normalizer is not None:
-        predictions = normalizer.inverse_transform_targets(predictions.flatten())
-        y_val_original = normalizer.inverse_transform_targets(y_val)
-    else:
-        predictions = predictions.flatten()
-        y_val_original = y_val
+    """Plot predicted vs actual values in normalized space."""
+    predictions = model.predict(X_val).flatten()
     
     plt.figure(figsize=(8, 8))
-    plt.scatter(y_val_original, predictions, alpha=0.5)
-    plt.plot([y_val_original.min(), y_val_original.max()], 
-             [y_val_original.min(), y_val_original.max()], 'r--')
-    plt.xlabel('Actual Values')
-    plt.ylabel('Predicted Values')
-    plt.title('Predicted vs Actual Values (Original Scale)')
+    plt.scatter(y_val, predictions, alpha=0.5)
+    plt.plot([y_val.min(), y_val.max()], 
+             [y_val.min(), y_val.max()], 'r--')
+    plt.xlabel('Actual Values (Normalized)')
+    plt.ylabel('Predicted Values (Normalized)')
+    plt.title('Predicted vs Actual Values (Normalized Space)')
     plt.grid(True)
+    
+    # Print value ranges
+    print("\nValue ranges in plot (normalized space):")
+    print(f"Actual values range: {y_val.min():.3f} to {y_val.max():.3f}")
+    print(f"Predicted values range: {predictions.min():.3f} to {predictions.max():.3f}")
     
     # Save the plot
     plot_path = f'logs/{model_name}_predictions_vs_actuals.png'
@@ -118,30 +121,23 @@ def plot_predictions(model, X_val, y_val, model_name="model", normalizer=None):
 
 def evaluate_model(model, X_val, y_val, normalizer=None):
     """Evaluate model performance on validation data."""
+    # Get predictions in normalized space
+    predictions = model.predict(X_val).flatten()
+    
+    # Calculate metrics in normalized space
     results = model.evaluate(X_val, y_val, verbose=0)
     metrics = {
         'mse': results[0],
         'mae': results[1]
     }
     
-    # Get predictions
-    predictions = model.predict(X_val)
-    
-    # Convert back to original scale if normalizer is provided
-    if normalizer is not None:
-        predictions = normalizer.inverse_transform_targets(predictions.flatten())
-        y_val_original = normalizer.inverse_transform_targets(y_val)
-    else:
-        predictions = predictions.flatten()
-        y_val_original = y_val
-    
-    # Calculate Spearman correlation
-    spearman_corr, _ = spearmanr(y_val_original, predictions)
+    # Calculate Spearman correlation in normalized space
+    spearman_corr, _ = spearmanr(y_val, predictions)
     metrics['spearman_corr'] = spearman_corr
     
-    # Sample predictions
-    print("\nSample predictions vs actual (in original scale):")
-    for pred, actual in zip(predictions[:5], y_val_original[:5]):
+    # Sample predictions in normalized space
+    print("\nSample predictions vs actual (in normalized space):")
+    for pred, actual in zip(predictions[:5], y_val[:5]):
         print(f"Predicted: {pred:.3f}, Actual: {actual:.3f}")
     
     return metrics
