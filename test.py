@@ -23,6 +23,8 @@ def parse_args():
                        help='Force training even if pre-trained weights exist')
     parser.add_argument('--skip-indel', action='store_true',
                        help='Skip indel training/loading and go straight to KO fine-tuning')
+    parser.add_argument('--no-freeze', action='store_true',
+                       help='Do not freeze base model weights during KO training')
     return parser.parse_args()
 
 def train_or_load_base_model(base_model, indel_model, X_train, y_train, X_val, y_val, 
@@ -120,10 +122,11 @@ def main():
     _ = ko_model(dummy_input)
     
     if not args.skip_indel:
-        # Load DeepHF data for pre-training
+        # Load DeepHF data for pre-training (no inversion)
         print("Loading DeepHF data for pre-training...")
-        X_train_indel, X_val_indel, y_train_indel, y_val_indel = load_and_preprocess_data(
-            'sgrna_scorer/resources/DeepHF.clean.csv'
+        X_train_indel, X_val_indel, y_train_indel, y_val_indel, _ = load_and_preprocess_data(
+            'sgrna_scorer/resources/DeepHF.clean.csv',
+            invert_targets=False
         )
         
         print("\nIndel data shapes:")
@@ -147,10 +150,11 @@ def main():
             print("Error: Could not load pre-trained weights and --skip-indel was specified")
             sys.exit(1)
     
-    # Load KO data for fine-tuning
+    # Load KO data with target inversion
     print("\nLoading KO data for fine-tuning...")
-    X_train_ko, X_val_ko, y_train_ko, y_val_ko = load_and_preprocess_data(
-        'sgrna_scorer/resources/pt_sat_guides.csv'
+    X_train_ko, X_val_ko, y_train_ko, y_val_ko, ko_normalizer = load_and_preprocess_data(
+        'sgrna_scorer/resources/pt_sat_guides.csv',
+        invert_targets=True
     )
     
     print("\nKO data shapes:")
@@ -164,7 +168,11 @@ def main():
     
     # Fine-tune transfer learning model
     print("\nStarting KO model fine-tuning (transfer learning)...")
-    base_model.trainable = False
+    if not args.no_freeze:
+        base_model.trainable = False
+        print("Base model weights are frozen")
+    else:
+        print("Base model weights are trainable")
     
     ko_model.compile(
         optimizer=tf.keras.optimizers.Adam(1e-4),
@@ -186,9 +194,9 @@ def main():
     
     if trained_ko_model is not None:
         print("\nEvaluating initial KO model:")
-        ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
+        ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
         print("\nInitial KO validation metrics:", ko_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_initial")
+        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_initial", normalizer=ko_normalizer)
         
         # Gradual unfreezing and continued training
         print("\nStarting gradual unfreezing and continued training...")
@@ -221,14 +229,14 @@ def main():
             # Evaluate after each unfreezing
             if trained_ko_model is not None:
                 print(f"\nEvaluating model after unfreezing {base_layers[i].name}:")
-                ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
+                ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
                 print(f"\nValidation metrics after unfreezing {base_layers[i].name}:", ko_metrics)
         
         # Final evaluation and saving
         print("\nFinal evaluation after gradual unfreezing:")
-        final_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
+        final_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
         print("\nFinal KO validation metrics:", final_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_final")
+        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_final", normalizer=ko_normalizer)
         
         # Compare results
         print("\nModel Comparison:")

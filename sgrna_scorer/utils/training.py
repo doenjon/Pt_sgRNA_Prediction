@@ -87,19 +87,28 @@ def train_model(model, X_train, y_train, X_val, y_val,
         print(f"Error during training: {str(e)}")
         return None, None
 
-def plot_predictions(model, X_val, y_val, model_name="model"):
+def plot_predictions(model, X_val, y_val, model_name="model", normalizer=None):
     """Plot predicted vs actual values."""
     predictions = model.predict(X_val)
     
+    # Convert back to original scale if normalizer is provided
+    if normalizer is not None:
+        predictions = normalizer.inverse_transform_targets(predictions.flatten())
+        y_val_original = normalizer.inverse_transform_targets(y_val)
+    else:
+        predictions = predictions.flatten()
+        y_val_original = y_val
+    
     plt.figure(figsize=(8, 8))
-    plt.scatter(y_val, predictions, alpha=0.5)
-    plt.plot([y_val.min(), y_val.max()], [y_val.min(), y_val.max()], 'r--')
+    plt.scatter(y_val_original, predictions, alpha=0.5)
+    plt.plot([y_val_original.min(), y_val_original.max()], 
+             [y_val_original.min(), y_val_original.max()], 'r--')
     plt.xlabel('Actual Values')
     plt.ylabel('Predicted Values')
-    plt.title('Predicted vs Actual Values')
+    plt.title('Predicted vs Actual Values (Original Scale)')
     plt.grid(True)
     
-    # Save the plot as a PNG file
+    # Save the plot
     plot_path = f'logs/{model_name}_predictions_vs_actuals.png'
     plt.savefig(plot_path)
     plt.close()
@@ -107,7 +116,7 @@ def plot_predictions(model, X_val, y_val, model_name="model"):
     print(f"Predicted vs Actual plot saved to {plot_path}")
 
 
-def evaluate_model(model, X_val, y_val):
+def evaluate_model(model, X_val, y_val, normalizer=None):
     """Evaluate model performance on validation data."""
     results = model.evaluate(X_val, y_val, verbose=0)
     metrics = {
@@ -115,16 +124,25 @@ def evaluate_model(model, X_val, y_val):
         'mae': results[1]
     }
     
-    # Calculate Spearman correlation
+    # Get predictions
     predictions = model.predict(X_val)
-    spearman_corr, _ = spearmanr(y_val, predictions)
+    
+    # Convert back to original scale if normalizer is provided
+    if normalizer is not None:
+        predictions = normalizer.inverse_transform_targets(predictions.flatten())
+        y_val_original = normalizer.inverse_transform_targets(y_val)
+    else:
+        predictions = predictions.flatten()
+        y_val_original = y_val
+    
+    # Calculate Spearman correlation
+    spearman_corr, _ = spearmanr(y_val_original, predictions)
     metrics['spearman_corr'] = spearman_corr
     
     # Sample predictions
-    sample_predictions = predictions[:5]
-    print("\nSample predictions vs actual:")
-    for pred, actual in zip(sample_predictions, y_val[:5]):
-        print(f"Predicted: {pred[0]:.3f}, Actual: {actual:.3f}")
+    print("\nSample predictions vs actual (in original scale):")
+    for pred, actual in zip(predictions[:5], y_val_original[:5]):
+        print(f"Predicted: {pred:.3f}, Actual: {actual:.3f}")
     
     return metrics
 
