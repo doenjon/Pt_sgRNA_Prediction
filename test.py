@@ -3,7 +3,7 @@ import sys
 import argparse
 
 os.environ['XLA_FLAGS'] = '--xla_gpu_cuda_data_dir=/share/software/user/open/cuda/12.6.1'
-# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU
+os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
 
 
@@ -16,6 +16,20 @@ from sgrna_scorer.models.multi_path_atn_model import create_transfer_learning_mo
 from sgrna_scorer.utils.training import (train_model, evaluate_model, 
                                        save_model_weights, plot_predictions, 
                                        load_model_weights)
+
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    try:
+        for gpu in gpus:
+            tf.config.set_logical_device_configuration(
+                gpu,
+                [tf.config.LogicalDeviceConfiguration(memory_limit=512)]  # Reduce to 512MB
+            )
+        print("GPU memory limited to 512MB")
+    except RuntimeError as e:
+        print(f"Error setting GPU memory limit: {e}")
+        print("Falling back to CPU")
+        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train or load pre-trained model for sgRNA scoring')
@@ -68,8 +82,12 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     """Train a fresh model on KO data without transfer learning."""
     print("\nCreating and training fresh KO model (no transfer learning)...")
     
-    # Create new models
-    _, _, fresh_ko_model = create_transfer_learning_models(input_shape=(20,))
+    # Create new models with smaller size
+    _, _, fresh_ko_model = create_transfer_learning_models(
+        input_shape=(20,),
+        num_filters=128,  # Reduced from 256
+        num_dense_neurons=64  # Reduced from 128
+    )
     
     # Build model with dummy input
     dummy_input = tf.zeros((1, 20))
@@ -77,7 +95,7 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     
     # Compile fresh model
     fresh_ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-3),  # Higher learning rate for fresh training
+        optimizer=tf.keras.optimizers.Adam(1e-3),
         loss='mse',
         metrics=['mae']
     )
@@ -85,14 +103,14 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     print("\nFresh KO model architecture:")
     fresh_ko_model.summary()
     
-    # Train fresh model
+    # Train fresh model with smaller batch size
     trained_fresh_model, fresh_history = train_model(
         fresh_ko_model,
         X_train_ko, y_train_ko,
         X_val_ko, y_val_ko,
         model_name="fresh_ko_model",
-        batch_size=16,
-        epochs=100  # Train for longer since starting from scratch
+        batch_size=8,  # Reduced from 16
+        epochs=100
     )
     
     if trained_fresh_model is not None:
@@ -110,49 +128,66 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     
     return None
 
+def train_and_compare_models(X_train, y_train, X_val, y_val, 
+                           X_train_norm, y_train_norm, X_val_norm, y_val_norm,
+                           model_name, normalizer=None):
+    """Train models on both normalized and unnormalized data for comparison."""
+    print(f"\nTraining {model_name} model on unnormalized data...")
+    metrics_unnorm = train_fresh_ko_model(X_train, y_train, X_val, y_val)
+    
+    print(f"\nTraining {model_name} model on normalized data...")
+    metrics_norm = train_fresh_ko_model(X_train_norm, y_train_norm, X_val_norm, y_val_norm)
+    
+    print(f"\n=== {model_name} Model Performance Comparison ===")
+    print("\nUnnormalized data metrics:")
+    print(metrics_unnorm)
+    print("\nNormalized data metrics:")
+    print(metrics_norm)
+    
+    # Calculate improvement
+    if metrics_unnorm and metrics_norm:
+        mse_improvement = (metrics_unnorm['mse'] - metrics_norm['mse']) / metrics_unnorm['mse'] * 100
+        mae_improvement = (metrics_unnorm['mae'] - metrics_norm['mae']) / metrics_unnorm['mae'] * 100
+        corr_improvement = (metrics_norm['spearman_corr'] - metrics_unnorm['spearman_corr']) / abs(metrics_unnorm['spearman_corr']) * 100
+        
+        print("\nImprovement with normalization:")
+        print(f"MSE: {mse_improvement:.1f}%")
+        print(f"MAE: {mae_improvement:.1f}%")
+        print(f"Spearman correlation: {corr_improvement:.1f}%")
+    
+    return metrics_norm, metrics_unnorm
+
 def main():
-    args = parse_args()
+    # Load indel data
+    print("\nLoading indel data...")
+    X_train_indel, X_val_indel, y_train_indel, y_val_indel, indel_normalizer, X_indel_orig, y_indel_orig = load_and_preprocess_data(
+        'sgrna_scorer/resources/DeepHF.clean.csv',
+        invert_targets=False
+    )
     
-    # Create models
-    print("\nCreating models...")
-    base_model, indel_model, ko_model = create_transfer_learning_models(input_shape=(20,))
+    print("\nIndel data shapes:")
+    print(f"X_train_indel: {X_train_indel.shape}")
+    print(f"y_train_indel: {y_train_indel.shape}")
+    print(f"X_val_indel: {X_val_indel.shape}")
+    print(f"y_val_indel: {y_val_indel.shape}")
     
-    # Build models with dummy input
-    dummy_input = tf.zeros((1, 20))
-    _ = ko_model(dummy_input)
+    # Train on raw indel data
+    print("\n=== Training on raw indel data ===")
+    raw_indel_metrics = train_fresh_ko_model(
+        X_indel_orig[:X_train_indel.shape[0]], y_indel_orig[:y_train_indel.shape[0]],
+        X_indel_orig[X_train_indel.shape[0]:], y_indel_orig[y_train_indel.shape[0]:]
+    )
     
-    if not args.skip_indel:
-        # Load DeepHF data for pre-training (no inversion)
-        print("Loading DeepHF data for pre-training...")
-        X_train_indel, X_val_indel, y_train_indel, y_val_indel, _ = load_and_preprocess_data(
-            'sgrna_scorer/resources/DeepHF.clean.csv',
-            invert_targets=False
-        )
-        
-        print("\nIndel data shapes:")
-        print(f"X_train_indel: {X_train_indel.shape}")
-        print(f"y_train_indel: {y_train_indel.shape}")
-        print(f"X_val_indel: {X_val_indel.shape}")
-        print(f"y_val_indel: {y_val_indel.shape}")
-        
-        # Train or load base model
-        weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
-        if not train_or_load_base_model(base_model, indel_model, 
-                                      X_train_indel, y_train_indel,
-                                      X_val_indel, y_val_indel,
-                                      weights_path, args.force_train):
-            print("Error: Failed to train or load base model")
-            sys.exit(1)
-    else:
-        # Just load pre-trained weights
-        weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
-        if not load_model_weights(base_model, weights_path):
-            print("Error: Could not load pre-trained weights and --skip-indel was specified")
-            sys.exit(1)
+    # Train on normalized indel data
+    print("\n=== Training on normalized indel data ===")
+    norm_indel_metrics = train_fresh_ko_model(
+        X_train_indel, y_train_indel,
+        X_val_indel, y_val_indel
+    )
     
-    # Load KO data with target inversion
-    print("\nLoading KO data for fine-tuning...")
-    X_train_ko, X_val_ko, y_train_ko, y_val_ko, ko_normalizer = load_and_preprocess_data(
+    # Load KO data
+    print("\nLoading KO data...")
+    X_train_ko, X_val_ko, y_train_ko, y_val_ko, ko_normalizer, X_ko_orig, y_ko_orig = load_and_preprocess_data(
         'sgrna_scorer/resources/pt_sat_guides.csv',
         invert_targets=True
     )
@@ -163,103 +198,30 @@ def main():
     print(f"X_val_ko: {X_val_ko.shape}")
     print(f"y_val_ko: {y_val_ko.shape}")
     
-    # Train fresh model for comparison
-    fresh_metrics = train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko)
-    
-    # Fine-tune transfer learning model
-    print("\nStarting KO model fine-tuning (transfer learning)...")
-    if not args.no_freeze:
-        base_model.trainable = False
-        print("Base model weights are frozen")
-    else:
-        print("Base model weights are trainable")
-    
-    ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-4),
-        loss='mse',
-        metrics=['mae']
+    # Train on raw KO data
+    print("\n=== Training on raw KO data ===")
+    raw_ko_metrics = train_fresh_ko_model(
+        X_ko_orig[:X_train_ko.shape[0]], y_ko_orig[:y_train_ko.shape[0]],
+        X_ko_orig[X_train_ko.shape[0]:], y_ko_orig[y_train_ko.shape[0]:]
     )
     
-    print("\nKO model architecture:")
-    ko_model.summary()
-    
-    trained_ko_model, ko_history = train_model(
-        ko_model,
+    # Train on normalized KO data
+    print("\n=== Training on normalized KO data ===")
+    norm_ko_metrics = train_fresh_ko_model(
         X_train_ko, y_train_ko,
-        X_val_ko, y_val_ko,
-        model_name="ko_model",
-        batch_size=16,
-        epochs=30
+        X_val_ko, y_val_ko
     )
     
-    if trained_ko_model is not None:
-        print("\nEvaluating initial KO model:")
-        ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
-        print("\nInitial KO validation metrics:", ko_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_initial", normalizer=ko_normalizer)
-        
-        # Gradual unfreezing and continued training
-        print("\nStarting gradual unfreezing and continued training...")
-        
-        # Get all layers from the base model
-        base_layers = [layer for layer in base_model.layers if 'batch_normalization' not in layer.name.lower()]
-        
-        # Gradually unfreeze layers from top to bottom
-        for i in range(len(base_layers) - 1, -1, -1):
-            print(f"\nUnfreezing layer: {base_layers[i].name}")
-            base_layers[i].trainable = True
-            
-            # Recompile with lower learning rate
-            ko_model.compile(
-                optimizer=tf.keras.optimizers.Adam(1e-5),  # Even lower learning rate for fine-tuning
-                loss='mse',
-                metrics=['mae']
-            )
-            
-            # Train for a few epochs with unfrozen layer
-            trained_ko_model, ko_history = train_model(
-                ko_model,
-                X_train_ko, y_train_ko,
-                X_val_ko, y_val_ko,
-                model_name=f"ko_model_unfreeze_{i}",
-                batch_size=16,
-                epochs=30  # Fewer epochs per layer
-            )
-            
-            # Evaluate after each unfreezing
-            if trained_ko_model is not None:
-                print(f"\nEvaluating model after unfreezing {base_layers[i].name}:")
-                ko_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
-                print(f"\nValidation metrics after unfreezing {base_layers[i].name}:", ko_metrics)
-        
-        # Final evaluation and saving
-        print("\nFinal evaluation after gradual unfreezing:")
-        final_metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko, ko_normalizer)
-        print("\nFinal KO validation metrics:", final_metrics)
-        plot_predictions(trained_ko_model, X_val_ko, y_val_ko, model_name="ko_model_final", normalizer=ko_normalizer)
-        
-        # Compare results
-        print("\nModel Comparison:")
-        print("Fresh model (no transfer learning):")
-        print(fresh_metrics)
-        print("\nTransfer learning model:")
-        print(final_metrics)
-        
-        # Calculate improvement
-        if fresh_metrics and final_metrics:
-            mse_improvement = (fresh_metrics['mse'] - final_metrics['mse']) / fresh_metrics['mse'] * 100
-            mae_improvement = (fresh_metrics['mae'] - final_metrics['mae']) / fresh_metrics['mae'] * 100
-            corr_improvement = (final_metrics['spearman_corr'] - fresh_metrics['spearman_corr']) / abs(fresh_metrics['spearman_corr']) * 100
-            
-            print("\nImprovement with transfer learning:")
-            print(f"MSE: {mse_improvement:.1f}%")
-            print(f"MAE: {mae_improvement:.1f}%")
-            print(f"Spearman correlation: {corr_improvement:.1f}%")
-        
-        # Save final model
-        ko_weights_path = 'sgrna_scorer/resources/ko_model_final'
-        save_model_weights(ko_model, ko_weights_path)
-        print(f"\nSaved final fine-tuned KO model weights to {ko_weights_path}")
+    # Print comparison of all results
+    print("\n=== Final Results ===")
+    print("\nRaw Indel Model Metrics:")
+    print(raw_indel_metrics)
+    print("\nNormalized Indel Model Metrics:")
+    print(norm_indel_metrics)
+    print("\nRaw KO Model Metrics:")
+    print(raw_ko_metrics)
+    print("\nNormalized KO Model Metrics:")
+    print(norm_ko_metrics)
 
 if __name__ == "__main__":
     main()
