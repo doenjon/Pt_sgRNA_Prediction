@@ -42,7 +42,7 @@ def parse_args():
                        help='Do not freeze base model weights during KO training')
     return parser.parse_args()
 
-def train_or_load_base_model(base_model, indel_model, X_train, y_train, X_val, y_val, 
+def train_or_load_base_model(base_model, X_train, y_train, X_val, y_val, 
                             weights_path, force_train=False):
     """Train or load the base model depending on conditions."""
     if not force_train and os.path.exists(f"{weights_path}.weights.h5"):
@@ -52,27 +52,57 @@ def train_or_load_base_model(base_model, indel_model, X_train, y_train, X_val, y
             return True
         print("Failed to load weights, falling back to training")
     
-    print("\nTraining indel model...")
-    # Compile indel model for pre-training
-    indel_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-3),
+    print("\nTraining base model on indel data...")
+    # Compile base model for pre-training
+    optimizer = tf.keras.optimizers.Adam(
+        learning_rate=1e-3,  # High initial learning rate
+        clipnorm=1.0
+    )
+    
+    base_model.compile(
+        optimizer=optimizer,
         loss='mse',
         metrics=['mae']
     )
     
+    # Add callbacks with consistent stopping conditions
+    base_callbacks = [
+        tf.keras.callbacks.ModelCheckpoint(
+            f'{weights_path}_checkpoint.weights.h5',
+            monitor='val_loss',
+            save_best_only=True,
+            save_weights_only=True
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.7,
+            patience=5,  
+            min_lr=1e-5,
+            min_delta=0.001
+        ),
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=7,
+            restore_best_weights=True,
+            min_delta=0.001
+        )
+    ]
+    
     trained_model, history = train_model(
-        indel_model,
+        base_model,
         X_train, y_train,
         X_val, y_val,
-        model_name="indel_model",
-        batch_size=32,
-        epochs=50
+        model_name="base_model",
+        batch_size=64,
+        epochs=250,  # Max epochs
+        callbacks=base_callbacks,
+        use_base_callbacks=False
     )
     
     if trained_model is not None:
         metrics = evaluate_model(trained_model, X_val, y_val)
         print("\nValidation metrics:", metrics)
-        plot_predictions(trained_model, X_val, y_val, model_name="indel_model")
+        plot_predictions(trained_model, X_val, y_val, model_name="base_model")
         save_model_weights(base_model, weights_path)
         print(f"\nSaved pre-trained base model weights to {weights_path}")
         return True
@@ -83,8 +113,8 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     """Train a fresh model on KO data without transfer learning."""
     print("\nCreating and training fresh KO model (no transfer learning)...")
     
-    # Create new models with smaller size
-    _, _, fresh_ko_model = create_transfer_learning_models(
+    # Create new KO model with dual path
+    _, fresh_ko_model = create_transfer_learning_models(
         input_shape=(20,),
         num_filters=128,
         num_dense_neurons=64
@@ -96,8 +126,8 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     
     # Compile fresh model with gradient clipping
     optimizer = tf.keras.optimizers.Adam(
-        learning_rate=1e-3,  # Fixed initial learning rate
-        clipnorm=1.0  # Add gradient clipping
+        learning_rate=5e-3,  # High initial learning rate
+        clipnorm=1.0
     )
     
     fresh_ko_model.compile(
@@ -109,32 +139,39 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     print("\nFresh KO model architecture:")
     fresh_ko_model.summary()
     
-    # Add callbacks for training stability
+    # Add callbacks with consistent stopping conditions
     callbacks = [
-        tf.keras.callbacks.EarlyStopping(
+        tf.keras.callbacks.ModelCheckpoint(
+            'sgrna_scorer/resources/checkpoints/fresh_ko_model_{epoch:02d}.weights.h5',
             monitor='val_loss',
-            patience=15,
-            restore_best_weights=True,
-            min_delta=0.001
+            save_best_only=True,
+            save_weights_only=True
         ),
         tf.keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
-            factor=0.5,
-            patience=5,
-            min_lr=1e-6,
+            factor=0.7,
+            patience=5,  # Reduced from 20 to 5
+            min_lr=1e-5,
+            min_delta=0.001
+        ),
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=20,
+            restore_best_weights=True,
             min_delta=0.001
         )
     ]
     
-    # Train fresh model with slightly larger batch size
+    # Train fresh model
     trained_fresh_model, fresh_history = train_model(
         fresh_ko_model,
         X_train_ko, y_train_ko,
         X_val_ko, y_val_ko,
         model_name="fresh_ko_model",
         batch_size=32,
-        epochs=100,
-        callbacks=callbacks
+        epochs=250,  # Max epochs
+        callbacks=callbacks,
+        use_base_callbacks=False
     )
     
     if trained_fresh_model is not None:
@@ -185,7 +222,7 @@ def main():
     # Load indel data
     print("\nLoading indel data...")
     X_train_indel, X_val_indel, y_train_indel, y_val_indel, indel_normalizer, X_indel_orig, y_indel_orig = load_and_preprocess_data(
-        'sgrna_scorer/resources/deepspcas9.clean.csv',
+        'sgrna_scorer/resources/crispron.clean.csv',
         invert_targets=False
     )
     
@@ -229,13 +266,20 @@ def main():
     # print("\nNormalized KO Model Metrics:")
     # print(norm_ko_metrics)
     
+    # Train fresh model for comparison
+    print("\n=== Training Fresh Model (No Transfer Learning) ===")
+    fresh_metrics = train_fresh_ko_model(
+        X_train_ko, y_train_ko,
+        X_val_ko, y_val_ko
+    )
+    
     # Now do transfer learning with normalized data
     print("\n=== Starting Transfer Learning on Normalized Data ===")
     args = parse_args()
     
     # Create models for transfer learning
     print("\nCreating models for transfer learning...")
-    base_model, indel_model, ko_model = create_transfer_learning_models(input_shape=(20,))
+    base_model, ko_model = create_transfer_learning_models(input_shape=(20,))
     
     # Build models with dummy input
     dummy_input = tf.zeros((1, 20))
@@ -243,20 +287,22 @@ def main():
     
     # Train or load base model on normalized indel data
     weights_path = 'sgrna_scorer/resources/pretrained_base_weights'
-    if not train_or_load_base_model(base_model, indel_model, 
+    if not train_or_load_base_model(base_model, 
                                   X_train_indel, y_train_indel,
                                   X_val_indel, y_val_indel,
                                   weights_path, args.force_train):
         print("Error: Failed to train or load base model")
         sys.exit(1)
     
-    # Initial fine-tuning on normalized KO data
-    print("\nStarting initial KO model fine-tuning...")
+    # Fine-tune on normalized KO data
+    print("\nStarting KO model fine-tuning...")
+    
+    # Initial training with frozen base
     base_model.trainable = False
     print("Base model weights are initially frozen")
     
     ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-4),
+        optimizer=tf.keras.optimizers.Adam(1e-3),  # Initial learning rate
         loss='mse',
         metrics=['mae']
     )
@@ -264,7 +310,7 @@ def main():
     print("\nKO model architecture:")
     ko_model.summary()
     
-    # Only use ModelCheckpoint callback for transfer learning
+    # Define transfer_callbacks before using them
     transfer_callbacks = [
         tf.keras.callbacks.ModelCheckpoint(
             'sgrna_scorer/resources/checkpoints/ko_model_transfer_{epoch:02d}.weights.h5',
@@ -275,56 +321,59 @@ def main():
         tf.keras.callbacks.TensorBoard(
             log_dir=f'logs/ko_model_transfer_{datetime.now().strftime("%Y%m%d-%H%M%S")}',
             histogram_freq=1
+        ),
+        tf.keras.callbacks.ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.7,
+            patience=5,  # Reduced from 20 to 5
+            min_lr=1e-5,
+            min_delta=0.001
+        ),
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=20,
+            restore_best_weights=True,
+            min_delta=0.001
         )
     ]
     
-    # Initial training with frozen base
+    # Train with frozen base
     trained_ko_model, ko_history = train_model(
         ko_model,
         X_train_ko, y_train_ko,
         X_val_ko, y_val_ko,
         model_name="ko_model_transfer_initial",
         batch_size=64,
-        epochs=200,
+        epochs=50,  # Initial training with frozen base
         callbacks=transfer_callbacks,
         use_base_callbacks=False
     )
     
-    # Gradual unfreezing and continued training
-    print("\nStarting gradual unfreezing and continued training...")
-    
-    # Get all layers from the base model
-    base_layers = [layer for layer in base_model.layers if 'batch_normalization' not in layer.name.lower()]
-    
-    # Gradually unfreeze layers from top to bottom
-    for i in range(len(base_layers) - 1, -1, -1):
-        print(f"\nUnfreezing layer: {base_layers[i].name}")
-        base_layers[i].trainable = True
-        
-        # Recompile with lower learning rate
-        ko_model.compile(
-            optimizer=tf.keras.optimizers.Adam(1e-5),  # Lower learning rate for fine-tuning
-            loss='mse',
-            metrics=['mae']
-        )
-        
-        # Train for a few epochs with unfrozen layer
-        trained_ko_model, ko_history = train_model(
-            ko_model,
-            X_train_ko, y_train_ko,
-            X_val_ko, y_val_ko,
-            model_name=f"ko_model_unfreeze_{i}",
-            batch_size=64,
-            epochs=50,
-            callbacks=transfer_callbacks,
-            use_base_callbacks=False
-        )
-        
-        # Evaluate after each unfreezing
-        if trained_ko_model is not None:
-            print(f"\nEvaluating model after unfreezing {base_layers[i].name}:")
-            metrics = evaluate_model(trained_ko_model, X_val_ko, y_val_ko)
-            print(f"\nValidation metrics after unfreezing {base_layers[i].name}:", metrics)
+    # Gradual unfreezing
+    print("\nStarting gradual unfreezing...")
+    for layer in base_model.layers:
+        if not isinstance(layer, tf.keras.layers.BatchNormalization):
+            layer.trainable = True
+            print(f"Unfreezing layer: {layer.name}")
+            
+            # Recompile with a lower learning rate for fine-tuning
+            ko_model.compile(
+                optimizer=tf.keras.optimizers.Adam(1e-4),  # Lower learning rate for fine-tuning
+                loss='mse',
+                metrics=['mae']
+            )
+            
+            # Train for a few epochs with the current layer unfrozen
+            trained_ko_model, ko_history = train_model(
+                ko_model,
+                X_train_ko, y_train_ko,
+                X_val_ko, y_val_ko,
+                model_name=f"ko_model_unfreeze_{layer.name}",
+                batch_size=64,
+                epochs=20,  # Train each unfrozen stage for 20 epochs
+                callbacks=transfer_callbacks,
+                use_base_callbacks=False
+            )
     
     # Final evaluation
     if trained_ko_model is not None:
@@ -333,6 +382,24 @@ def main():
         print("\nTransfer learning KO validation metrics:", transfer_metrics)
         plot_predictions(trained_ko_model, X_val_ko, y_val_ko, 
                         model_name="ko_model_transfer_final")
+        
+        # Compare approaches
+        print("\n=== Final Comparison ===")
+        print("\nFresh Model (No Transfer Learning):")
+        print(fresh_metrics)
+        print("\nTransfer Learning Model:")
+        print(transfer_metrics)
+        
+        # Calculate improvement
+        if fresh_metrics and transfer_metrics:
+            mse_improvement = (fresh_metrics['mse'] - transfer_metrics['mse']) / fresh_metrics['mse'] * 100
+            mae_improvement = (fresh_metrics['mae'] - transfer_metrics['mae']) / fresh_metrics['mae'] * 100
+            corr_improvement = (transfer_metrics['spearman_corr'] - fresh_metrics['spearman_corr']) / abs(fresh_metrics['spearman_corr']) * 100
+            
+            print("\nTransfer Learning Improvement:")
+            print(f"MSE: {mse_improvement:.1f}%")
+            print(f"MAE: {mae_improvement:.1f}%")
+            print(f"Spearman correlation: {corr_improvement:.1f}%")
 
 if __name__ == "__main__":
     main()
