@@ -11,13 +11,13 @@ def create_model(input_shape, num_filters=128, num_dense_neurons=64, dropout_rat
     
     # Path 1: Small motifs
     path1 = layers.Conv1D(num_filters, kernel_size=3, activation='relu', 
-                          kernel_initializer='he_normal')(x)
+                          kernel_initializer='he_normal', padding='same')(x)
     path1 = layers.GlobalMaxPooling1D()(path1)
     path1 = layers.Dropout(dropout_rate)(path1)
     
     # Path 2: Larger motifs
-    path2 = layers.Conv1D(num_filters, kernel_size=7, activation='relu', 
-                          kernel_initializer='he_normal')(x)
+    path2 = layers.Conv1D(num_filters, kernel_size=5, activation='relu', 
+                          kernel_initializer='he_normal', padding='same')(x)
     path2 = layers.GlobalMaxPooling1D()(path2)
     path2 = layers.Dropout(dropout_rate)(path2)
     
