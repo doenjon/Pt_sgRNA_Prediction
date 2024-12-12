@@ -14,9 +14,9 @@ class DebugLayer(layers.Layer):
                 "\nstd:", tf.math.reduce_std(inputs))
         return inputs
 
-def create_base_feature_extractor(input_shape, num_filters=256, input_dim=5, 
+def create_base_feature_extractor(input_shape, num_filters=32, input_dim=5, 
                                 kernel_size=5, pool_size=2, dropout_rate=0.4):
-    """Create the base feature extractor using the successful original architecture."""
+    """Create a simplified base feature extractor."""
     
     input_sequence = layers.Input(shape=input_shape)
     
@@ -24,34 +24,23 @@ def create_base_feature_extractor(input_shape, num_filters=256, input_dim=5,
     x = layers.Normalization()(input_sequence)
     x = layers.Embedding(input_dim=input_dim, output_dim=44, input_length=input_shape[0])(x)
     
-    # First convolution block
+    # Single convolution block
     x = layers.Conv1D(num_filters, kernel_size, activation='relu', 
                      kernel_initializer='he_normal')(x)
     x = layers.MaxPooling1D(pool_size=pool_size)(x)
     x = layers.Dropout(dropout_rate)(x)
     
-    # Parallel convolution paths
-    conv_path1 = layers.Conv1D(num_filters, kernel_size, activation='relu',
-                              kernel_initializer='he_normal')(x)
-    conv_path1 = layers.Dropout(dropout_rate)(conv_path1)
-
-    conv_path2 = layers.Conv1D(num_filters, kernel_size, activation='relu',
-                              kernel_initializer='he_normal')(x)
-    conv_path2 = layers.Dropout(dropout_rate)(conv_path2)
-
-    # Attention mechanism
-    concatenated = layers.Concatenate()([conv_path1, conv_path2])
-    attention_output = layers.Attention(use_scale=True)([concatenated, concatenated])
-    
     # Flatten for output
-    features = layers.Flatten()(attention_output)
+    features = layers.Flatten()(x)
     
     # Add a dense layer to produce a single output
     output = layers.Dense(1, activation='linear')(features)
     
+    tf.print("Output shape:", output.shape)
+    
     return models.Model(inputs=input_sequence, outputs=output, name='base_feature_extractor')
 
-def create_ko_specific_path(input_shape, num_filters=128, input_dim=5,
+def create_ko_specific_path(input_shape, num_filters=64, input_dim=5,
                           kernel_size=5, pool_size=2, dropout_rate=0.4):
     """Create a fresh path for learning KO-specific features."""
     

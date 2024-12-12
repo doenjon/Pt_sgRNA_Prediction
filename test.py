@@ -126,7 +126,7 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
     
     # Compile fresh model with gradient clipping
     optimizer = tf.keras.optimizers.Adam(
-        learning_rate=5e-3,  # High initial learning rate
+        learning_rate=1e-3,  # High initial learning rate
         clipnorm=1.0
     )
     
@@ -150,13 +150,13 @@ def train_fresh_ko_model(X_train_ko, y_train_ko, X_val_ko, y_val_ko):
         tf.keras.callbacks.ReduceLROnPlateau(
             monitor='val_loss',
             factor=0.7,
-            patience=5,  # Reduced from 20 to 5
+            patience=7,  # Reduced from 20 to 5
             min_lr=1e-5,
             min_delta=0.001
         ),
         tf.keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=20,
+            patience=25,
             restore_best_weights=True,
             min_delta=0.001
         )
@@ -350,30 +350,25 @@ def main():
     )
     
     # Gradual unfreezing
-    print("\nStarting gradual unfreezing...")
-    for layer in base_model.layers:
-        if not isinstance(layer, tf.keras.layers.BatchNormalization):
-            layer.trainable = True
-            print(f"Unfreezing layer: {layer.name}")
-            
-            # Recompile with a lower learning rate for fine-tuning
-            ko_model.compile(
-                optimizer=tf.keras.optimizers.Adam(1e-4),  # Lower learning rate for fine-tuning
-                loss='mse',
-                metrics=['mae']
-            )
-            
-            # Train for a few epochs with the current layer unfrozen
-            trained_ko_model, ko_history = train_model(
-                ko_model,
-                X_train_ko, y_train_ko,
-                X_val_ko, y_val_ko,
-                model_name=f"ko_model_unfreeze_{layer.name}",
-                batch_size=64,
-                epochs=20,  # Train each unfrozen stage for 20 epochs
-                callbacks=transfer_callbacks,
-                use_base_callbacks=False
-            )
+    print("\nStarting unfreezing all layers at once...")
+    base_model.trainable = True  # Unfreeze the entire model
+    ko_model.compile(
+        optimizer=tf.keras.optimizers.Adam(1e-4),  # Lower learning rate for fine-tuning
+        loss='mse',
+        metrics=['mae']
+    )
+    
+    # Train with the entire model unfrozen
+    trained_ko_model, ko_history = train_model(
+        ko_model,
+        X_train_ko, y_train_ko,
+        X_val_ko, y_val_ko,
+        model_name="ko_model_transfer_final",
+        batch_size=64,
+        epochs=20,  # Train for 20 epochs
+        callbacks=transfer_callbacks,
+        use_base_callbacks=False
+    )
     
     # Final evaluation
     if trained_ko_model is not None:
