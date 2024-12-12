@@ -83,10 +83,14 @@ def load_and_preprocess_data(file_path, invert_targets=False):
     data = data.dropna() 
     sequences = data['sequence'].values
     scores = data['score'].values
+    positions = data['position'].values  # Load position feature
     
     # Convert sequences to numerical representation
     X = preprocess_sequences(sequences)
     y = scores
+    
+    # Add position feature as an additional column to X
+    X = np.column_stack([X, positions])
     
     # Store original data for comparison
     X_original = X.copy()
