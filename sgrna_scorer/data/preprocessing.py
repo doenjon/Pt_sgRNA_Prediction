@@ -44,25 +44,23 @@ class DataNormalizer:
         print(f"Min: {np.min(normalized_data):.3f}")
         print(f"Max: {np.max(normalized_data):.3f}")
         
-    def fit_transform(self, sequences, targets):
-        """Fit and transform targets only, leave sequences as is."""
+    def fit_transform(self, sequences, features, targets):
+        """Fit and transform targets only, leave sequences and features as is."""
         # Store original targets for plotting
         original_targets = targets.copy()
         
-        # Fit and transform targets
+        # Fit and transform targets only
         normalized_targets = self.target_scaler.fit_transform(targets.reshape(-1, 1)).flatten()
         
-        # Plot distributions for targets only
+        # Plot distributions for targets
         self.plot_distributions(original_targets, normalized_targets, "targets")
         
-        return sequences, normalized_targets
+        return sequences, features, normalized_targets
     
-    def transform(self, sequences, targets):
-        """Transform targets only, leave sequences as is."""
-        # Transform targets
+    def transform(self, sequences, features, targets):
+        """Transform targets only, leave sequences and features as is."""
         normalized_targets = self.target_scaler.transform(targets.reshape(-1, 1)).flatten()
-        
-        return sequences, normalized_targets
+        return sequences, features, normalized_targets
     
     def inverse_transform_targets(self, normalized_targets):
         """Convert normalized targets back to original scale."""
@@ -81,31 +79,42 @@ def load_and_preprocess_data(file_path, invert_targets=False):
     """Load and preprocess sgRNA data from file."""
     data = pd.read_csv(file_path)
     data = data.dropna() 
+    
     sequences = data['sequence'].values
+    position_feature = data['position'].values
     scores = data['score'].values
     
     # Convert sequences to numerical representation
     X = preprocess_sequences(sequences)
+    
+    # Combine features (only position feature)
+    features = position_feature.reshape(-1, 1)  # Reshape to be 2D
     y = scores
     
     # Store original data for comparison
     X_original = X.copy()
     y_original = y.copy()
     
-    # Invert targets if specified (for KO data) - do this BEFORE splitting
+    # Invert targets if specified (for KO data)
     if invert_targets:
         y = -1 * y
     
-    # Split data after inversion
-    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
+    # Split data
+    X_train, X_val, features_train, features_val, y_train, y_val = train_test_split(
+        X, features, y, test_size=0.2, random_state=42
+    )
     
     # Create and fit normalizer on training data only
     normalizer = DataNormalizer()
-    X_train_norm, y_train_norm = normalizer.fit_transform(X_train, y_train)
+    X_train_norm, features_train_norm, y_train_norm = normalizer.fit_transform(
+        X_train, features_train, y_train
+    )
     
     # Transform validation data using fitted normalizer
-    X_val_norm, y_val_norm = normalizer.transform(X_val, y_val)
+    X_val_norm, features_val_norm, y_val_norm = normalizer.transform(
+        X_val, features_val, y_val
+    )
     
-    # Return both normalized and original data for comparison
+    # Don't stack features with X, keep them separate
     return (X_train_norm, X_val_norm, y_train_norm, y_val_norm, normalizer,
             X_original, y_original)

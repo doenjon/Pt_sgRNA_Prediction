@@ -64,39 +64,62 @@ def plot_training_history(history, model_name):
     
     print(f"Training history plot saved to {plot_path}")
 
-def train_model(model, X_train, y_train, X_val, y_val, 
-                model_name="model", batch_size=32, epochs=50,
-                callbacks=None, use_base_callbacks=True):
-    """Train a model with monitoring and callbacks."""
-    if callbacks is None:
-        callbacks = []
-    
-    # Only add base callbacks if requested
-    if use_base_callbacks:
-        base_callbacks = create_callbacks(model_name)
-        callbacks.extend(base_callbacks)
-    
-    try:
-        history = model.fit(
-            X_train, y_train,
-            validation_data=(X_val, y_val),
-            epochs=epochs,
-            batch_size=batch_size,
-            callbacks=callbacks,
-            verbose=1
+def train_model(model, train_data, val_data, batch_size=32, epochs=100, use_feature=False, additional_callbacks=None, fold_num=None):
+    """Train the model with optional feature data."""
+    callbacks = [
+        tf.keras.callbacks.EarlyStopping(
+            monitor='val_loss',
+            patience=20,
+            restore_best_weights=True
         )
+    ]
+    
+    if additional_callbacks:
+        callbacks.extend(additional_callbacks)
+    
+    if use_feature:
+        X_train, feature_train, y_train = train_data
+        X_val, feature_val, y_val = val_data
         
-        plot_training_history(history, model_name)
+        print(f"Training data shapes: X_train: {X_train.shape}, feature_train: {feature_train.shape}, y_train: {y_train.shape}")
+        print(f"Validation data shapes: X_val: {X_val.shape}, feature_val: {feature_val.shape}, y_val: {y_val.shape}")
         
-        return model, history
+        history = model.fit(
+            [X_train, feature_train],
+            y_train,
+            validation_data=([X_val, feature_val], y_val),
+            batch_size=batch_size,
+            epochs=epochs,
+            callbacks=callbacks
+        )
+    else:
+        X_train, y_train = train_data
+        X_val, y_val = val_data
         
-    except Exception as e:
-        print(f"Error during training: {str(e)}")
-        return None, None
+        print(f"Training data shapes: X_train: {X_train.shape}, y_train: {y_train.shape}")
+        print(f"Validation data shapes: X_val: {X_val.shape}, y_val: {y_val.shape}")
+        
+        history = model.fit(
+            X_train,
+            y_train,
+            validation_data=(X_val, y_val),
+            batch_size=batch_size,
+            epochs=epochs,
+            callbacks=callbacks
+        )
+    
+    return history
 
 def plot_predictions(model, X_val, y_val, model_name="model", normalizer=None):
     """Plot predicted vs actual values in normalized space."""
-    predictions = model.predict(X_val).flatten()
+    if isinstance(X_val, list):  # If features are included
+        val_inputs = {
+            'sequence_input': X_val[0],
+            'feature_input': X_val[1]
+        }
+        predictions = model.predict(val_inputs).flatten()
+    else:  # No features
+        predictions = model.predict({'sequence_input': X_val}).flatten()
     
     plt.figure(figsize=(8, 8))
     plt.scatter(y_val, predictions, alpha=0.5)
@@ -122,17 +145,25 @@ def plot_predictions(model, X_val, y_val, model_name="model", normalizer=None):
 
 def evaluate_model(model, X_val, y_val, normalizer=None):
     """Evaluate model performance on validation data."""
-    # Get predictions in normalized space
-    predictions = model.predict(X_val).flatten()
+    if isinstance(X_val, list):
+        val_inputs = {
+            'sequence_input': X_val[0],
+            'feature_input': X_val[1]
+        }
+        print(f"Evaluation input shapes: {val_inputs['sequence_input'].shape}, {val_inputs['feature_input'].shape}")
+        predictions = model.predict(val_inputs).flatten()
+        results = model.evaluate(val_inputs, y_val, verbose=0)
+    else:
+        print(f"Evaluation input shape: {X_val.shape}")
+        predictions = model.predict({'sequence_input': X_val}).flatten()
+        results = model.evaluate({'sequence_input': X_val}, y_val, verbose=0)
     
-    # Calculate metrics in normalized space
-    results = model.evaluate(X_val, y_val, verbose=0)
     metrics = {
         'mse': results[0],
         'mae': results[1]
     }
     
-    # Calculate Spearman correlation in normalized space
+    # Calculate Spearman correlation
     spearman_corr, _ = spearmanr(y_val, predictions)
     metrics['spearman_corr'] = spearman_corr
     
