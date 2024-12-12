@@ -354,7 +354,7 @@ def main():
     print("\nStarting unfreezing all layers at once...")
     base_model.trainable = True  # Unfreeze the entire model
     ko_model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-4),  # Lower learning rate for fine-tuning
+        optimizer=tf.keras.optimizers.Adam(1e-3),  # Lower learning rate for fine-tuning
         loss='mse',
         metrics=['mae']
     )
@@ -366,7 +366,7 @@ def main():
         X_val_ko, y_val_ko,
         model_name="ko_model_transfer_final",
         batch_size=64,
-        epochs=20,  # Train for 20 epochs
+        epochs=250,  
         callbacks=transfer_callbacks,
         use_base_callbacks=False
     )
