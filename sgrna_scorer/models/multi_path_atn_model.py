@@ -36,9 +36,11 @@ def create_base_feature_extractor(input_shape, num_filters=32, input_dim=5,
     # Add a dense layer to produce a single output
     output = layers.Dense(1, activation='linear')(features)
     
-    tf.print("Output shape:", output.shape)
+    # Create two models: one for training and one for feature extraction
+    training_model = models.Model(inputs=input_sequence, outputs=output, name='base_model')
+    feature_model = models.Model(inputs=input_sequence, outputs=features, name='feature_extractor')
     
-    return models.Model(inputs=input_sequence, outputs=output, name='base_feature_extractor')
+    return training_model, feature_model
 
 def create_ko_specific_path(input_shape, num_filters=64, input_dim=5,
                           kernel_size=5, pool_size=2, dropout_rate=0.4):
@@ -65,14 +67,14 @@ def create_ko_specific_path(input_shape, num_filters=64, input_dim=5,
     
     return models.Model(inputs=input_sequence, outputs=features, name='ko_specific_path')
 
-def create_dual_path_model(base_model, input_shape, num_dense_neurons=128, dropout_rate=0.4):
+def create_dual_path_model(base_feature_model, input_shape, num_dense_neurons=128, dropout_rate=0.4):
     """Create a model with parallel pre-trained and fresh paths."""
     
     # Input layer
     inputs = layers.Input(shape=input_shape)
     
     # Pre-trained path (frozen initially)
-    pretrained_features = base_model(inputs)
+    pretrained_features = base_feature_model(inputs)  # Get features directly
     
     # Fresh KO-specific path
     ko_path = create_ko_specific_path(input_shape)
@@ -101,8 +103,8 @@ def create_transfer_learning_models(input_shape, num_filters=256, input_dim=5,
                                   dropout_rate=0.4):
     """Create all models needed for transfer learning."""
     
-    # Create base feature extractor
-    base_model = create_base_feature_extractor(
+    # Create base feature extractor and feature model
+    base_model, feature_model = create_base_feature_extractor(
         input_shape=input_shape,
         num_filters=num_filters,
         input_dim=input_dim,
@@ -113,7 +115,7 @@ def create_transfer_learning_models(input_shape, num_filters=256, input_dim=5,
     
     # Create separate KO model with dual path
     ko_model = create_dual_path_model(
-        base_model=base_model,
+        base_feature_model=feature_model,  # Pass the feature model
         input_shape=input_shape,
         num_dense_neurons=num_dense_neurons,
         dropout_rate=dropout_rate

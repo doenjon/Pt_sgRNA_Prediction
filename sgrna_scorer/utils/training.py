@@ -2,6 +2,7 @@ import tensorflow as tf
 from datetime import datetime
 import os
 from scipy.stats import spearmanr
+import numpy as np
 
 
 def create_callbacks(model_name):
@@ -77,9 +78,24 @@ def train_model(model, X_train, y_train, X_val, y_val,
         callbacks.extend(base_callbacks)
     
     try:
+        # Create dummy targets for the features output if needed
+        if isinstance(model.output, list):
+            # If the model has multiple outputs, create appropriate targets
+            y_train_dict = {
+                'output_0': y_train,
+                'features': np.zeros((len(y_train), model.output[1].shape[1]))
+            }
+            y_val_dict = {
+                'output_0': y_val,
+                'features': np.zeros((len(y_val), model.output[1].shape[1]))
+            }
+        else:
+            y_train_dict = y_train
+            y_val_dict = y_val
+
         history = model.fit(
-            X_train, y_train,
-            validation_data=(X_val, y_val),
+            X_train, y_train_dict,
+            validation_data=(X_val, y_val_dict),
             epochs=epochs,
             batch_size=batch_size,
             callbacks=callbacks,

@@ -59,6 +59,7 @@ def train_or_load_base_model(base_model, X_train, y_train, X_val, y_val,
         clipnorm=1.0
     )
     
+    # Compile with simple loss and metrics for single output
     base_model.compile(
         optimizer=optimizer,
         loss='mse',
@@ -331,7 +332,7 @@ def main():
         ),
         tf.keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=20,
+            patience=25,
             restore_best_weights=True,
             min_delta=0.001
         )
@@ -344,7 +345,7 @@ def main():
         X_val_ko, y_val_ko,
         model_name="ko_model_transfer_initial",
         batch_size=64,
-        epochs=50,  # Initial training with frozen base
+        epochs=250,  # Initial training with frozen base
         callbacks=transfer_callbacks,
         use_base_callbacks=False
     )
