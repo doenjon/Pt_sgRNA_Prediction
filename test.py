@@ -82,7 +82,7 @@ def train_and_evaluate(X_train, X_val, y_train, y_val, feature_train=None, featu
 
 def main():
     # Load and preprocess data
-    data_file = 'sgrna_scorer/resources/pt_sat_guides.fea.clean.csv'  
+    data_file = 'sgrna_scorer/resources/pt_sat_guides.30.fea.clean.csv'  
     X_train, X_val, y_train, y_val, normalizer, X_original, y_original = load_and_preprocess_data(
         data_file, 
         invert_targets=False
