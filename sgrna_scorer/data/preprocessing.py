@@ -68,24 +68,42 @@ class DataNormalizer:
         """Convert normalized targets back to original scale."""
         return self.target_scaler.inverse_transform(normalized_targets.reshape(-1, 1)).flatten()
 
-def preprocess_sequences(sequences):
-    """Convert DNA sequences to integer encodings."""
+def preprocess_sequences(sequences, target_length, extend_front=True, truncate_front=False, truncate_back=False, guide_length=20):
+    """Convert DNA sequences to integer encodings and adjust length."""
     nuc_map = {'A': 1, 'T': 2, 'G': 3, 'C': 4, 'N': 0}
     processed_seqs = []
     for seq in sequences:
+        # Assume the guide is in the middle of the sequence
+        guide_start = (len(seq) - guide_length) // 2
+        guide_end = guide_start + guide_length
+        
+        if truncate_front:
+            # Remove bases from the start of the guide
+            seq = seq[guide_start + (guide_length - target_length):guide_end]
+        elif truncate_back:
+            # Remove bases from the end of the guide
+            seq = seq[guide_start:guide_start + target_length]
+        elif extend_front:
+            # Add bases to the front of the guide
+            seq = seq[max(0, guide_start - (target_length - guide_length)):guide_end]
+        else:
+            # Add bases to the back of the guide
+            seq = seq[guide_start:min(len(seq), guide_end + (target_length - guide_length))]
+        
+        # Convert to numerical representation
         processed_seq = [nuc_map.get(nuc, 0) for nuc in seq.upper()]
         processed_seqs.append(processed_seq)
     return np.array(processed_seqs)
 
-def load_and_preprocess_data(file_path, invert_targets=False):
+def load_and_preprocess_data(file_path, target_length, invert_targets=False, extend_front=True):
     """Load and preprocess sgRNA data from file."""
     data = pd.read_csv(file_path)
     data = data.dropna() 
     sequences = data['sequence'].values
     scores = data['score'].values
     
-    # Convert sequences to numerical representation
-    X = preprocess_sequences(sequences)
+    # Convert sequences to numerical representation with target length
+    X = preprocess_sequences(sequences, target_length, extend_front)
     y = scores
     
     # Store original data for comparison
