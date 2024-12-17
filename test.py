@@ -14,7 +14,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '-1'  # Force CPU
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
 
 from sgrna_scorer.data.preprocessing import load_and_preprocess_data
-from sgrna_scorer.models.multi_path_atn_model import create_model
+from sgrna_scorer.models.multi_path_atn_model import create_model, plot_model_diagram
 
 def train_and_evaluate(X_train, X_val, y_train, y_val, feature_train=None, feature_val=None, use_feature=False, fold_num=0):
     """Train and evaluate model for one fold."""
@@ -104,6 +104,9 @@ def preprocess_sequences(sequences, target_length, pad_front=True):
     return np.array(processed_seqs)
 
 def main():
+    # Plot the model diagram
+    plot_model_diagram()
+    
     # Load and preprocess data
     data_file = 'sgrna_scorer/resources/pt_sat_guides.60.clean.csv'
     X_train, X_val, y_train, y_val, normalizer, X_original, y_original = load_and_preprocess_data(

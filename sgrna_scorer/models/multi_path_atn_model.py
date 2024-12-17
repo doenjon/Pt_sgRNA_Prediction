@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
+from tensorflow.keras.utils import plot_model
 
 class MultiPathAttnModel(tf.keras.Model):
     def __init__(self, use_extra_feature=True):
@@ -125,3 +126,12 @@ def create_model(sequence_input_shape, use_feature=False, num_filters=128, num_d
         model = models.Model(inputs=sequence_input, outputs=output, name='model_without_feature')
     
     return model
+
+def plot_model_diagram():
+    """Plot and save the model diagram."""
+    model = create_model(sequence_input_shape=(60,), use_feature=False)
+    plot_model(model, to_file='multi_path_model.png', show_shapes=True, show_layer_names=True)
+    print("Model diagram saved to multi_path_model.png")
+
+# Call this function to generate the model diagram
+plot_model_diagram()
