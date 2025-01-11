@@ -13,7 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # Reduce TF logging
 
 import tensorflow as tf
 from sgrna_scorer.data.preprocessing import load_and_preprocess_data
-from sgrna_scorer.models.multi_path_atn_model import create_transfer_learning_models
+from sgrna_scorer.models.multi_path_atn_model import create_transfer_learning_models, plot_model_diagram
 from sgrna_scorer.utils.training import (train_model, evaluate_model, 
                                        save_model_weights, plot_predictions, 
                                        load_model_weights)
@@ -281,6 +281,10 @@ def main():
     # Create models for transfer learning
     print("\nCreating models for transfer learning...")
     base_model, ko_model = create_transfer_learning_models(input_shape=(20,))
+    
+    # Plot the model diagrams with expanded nested models
+    plot_model_diagram(base_model, filename='base_model_diagram.png')
+    plot_model_diagram(ko_model, filename='ko_model_diagram.png')
     
     # Build models with dummy input
     dummy_input = tf.zeros((1, 20))

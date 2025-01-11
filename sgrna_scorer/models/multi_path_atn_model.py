@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.keras import layers, models
+from tensorflow.keras.utils import plot_model
 
 class DebugLayer(layers.Layer):
     def __init__(self, name):
@@ -122,3 +123,14 @@ def create_transfer_learning_models(input_shape, num_filters=256, input_dim=5,
     )
     
     return base_model, ko_model
+
+def plot_model_diagram(model, filename='multi_path_model.png'):
+    """Plot and save the model diagram with expanded nested models."""
+    plot_model(
+        model, 
+        to_file=filename, 
+        show_shapes=True, 
+        show_layer_names=True, 
+        expand_nested=True  # Expand nested models
+    )
+    print(f"Model diagram saved to {filename}")
