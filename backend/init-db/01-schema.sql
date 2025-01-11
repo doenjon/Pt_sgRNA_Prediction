@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS jobs (
-    id SERIAL PRIMARY KEY,
+    id VARCHAR(255) PRIMARY KEY,
     input_sequence TEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'pending',
     result_data JSONB,
