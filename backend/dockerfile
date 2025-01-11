@@ -1,0 +1,16 @@
+# Use a multi-platform base image
+FROM --platform=$TARGETPLATFORM node:16.20.2
+
+# Set build arguments and environment variables
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN npm install
+
+COPY . .
+
+CMD [ "node", "server.js" ]

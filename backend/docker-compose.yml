@@ -1,0 +1,48 @@
+version: '3'
+services:
+  app:
+    build:
+      context: .
+      platforms:
+        - linux/amd64
+        - linux/arm64
+    volumes:
+      - .:/usr/src/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+    env_file:
+      - .env
+    deploy:
+      resources:
+        limits:
+          cpus: "0.04"
+          memory: 350M
+        reservations:
+          cpus: "0.01"
+          memory: 250M
+
+  db:
+    image: postgres:latest
+    platform: linux/arm64/v8
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS}
+
+  redis:
+    image: "redis:latest"
+    platform: linux/arm64/v8
+    ports:
+      - "6379:6379"
+
+volumes:
+  postgres_data:

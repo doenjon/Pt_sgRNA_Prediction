@@ -1,0 +1,341 @@
+:root {
+    --primary-color: #1a237e;
+    --accent-color: #283593;
+    --bg-color: #ffffff;
+    --text-color: #202124;
+    --border-color: #dadce0;
+}
+
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+}
+
+.gradient-background {
+    background: linear-gradient(135deg, #2c3e50 0%, #3a4a5c 100%);
+    min-height: 100vh;
+}
+
+.navbar {
+    padding: 1.2rem 0;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.form-control {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 1.2rem;
+    font-size: 1rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+    background-color: #ffffff;
+}
+
+.btn-light {
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 12px;
+    padding: 0.8rem 2rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    color: #2c3e50;
+    transition: all 0.3s ease;
+}
+
+.btn-light:hover {
+    background: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+/* Custom scrollbar */
+textarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+textarea::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Animation for content */
+.main-content {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.opacity-90 {
+    opacity: 0.9;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+
+@media (max-width: 768px) {
+    .main-content {
+        padding: 2rem 0;
+    }
+    
+    .glass-panel {
+        margin: 0 1rem;
+    }
+}
+
+.sequence-display {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.score-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.guide-result {
+    transition: transform 0.2s ease;
+}
+
+.guide-result:hover {
+    transform: translateY(-2px);
+}
+
+code {
+    color: inherit !important;
+}
+
+.sequence-display::-webkit-scrollbar {
+    height: 8px;
+}
+
+.sequence-display::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.sequence-display::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.sequence-display::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Animation for guide results */
+.guide-result {
+    animation: slideIn 0.5s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes slideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Add animation delay for each guide result */
+.guide-result:nth-child(1) { animation-delay: 0.1s; }
+.guide-result:nth-child(2) { animation-delay: 0.2s; }
+.guide-result:nth-child(3) { animation-delay: 0.3s; }
+.guide-result:nth-child(4) { animation-delay: 0.4s; }
+.guide-result:nth-child(5) { animation-delay: 0.5s; }
+
+/* Update these styles for the results page */
+.results-page {
+    background-color: white;
+    min-height: 100vh;
+}
+
+.results-page .navbar {
+    background: linear-gradient(135deg, #2c3e50 0%, #3a4a5c 100%);
+    padding: 1rem 0;
+}
+
+.results-content {
+    padding-top: 5rem;
+}
+
+.results-page .guide-result {
+    border-bottom: 1px solid #e9ecef;
+    padding: 1.5rem 0;
+    margin-bottom: 0;
+}
+
+.results-page .guide-result:last-child {
+    border-bottom: none;
+}
+
+.results-page .sequence-display {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    padding: 1rem;
+    margin: 1rem 0;
+}
+
+.results-page .score-badge {
+    background: #e9ecef;
+    color: #2c3e50;
+}
+
+/* Add these styles for the sequence map */
+.sequence-map {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.sequence-ruler {
+    position: relative;
+    height: 20px;
+    margin-bottom: 8px;
+}
+
+.ruler-marks {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: repeating-linear-gradient(
+        to right,
+        #dee2e6,
+        #dee2e6 1px,
+        transparent 1px,
+        transparent 20px
+    );
+}
+
+.ruler-numbers {
+    position: absolute;
+    top: 10px;
+    left: 0;
+    right: 0;
+    height: 12px;
+    font-size: 10px;
+    color: #6c757d;
+}
+
+.sequence-line {
+    position: relative;
+    min-height: 150px;
+}
+
+.main-sequence {
+    height: 4px;
+    background: #2c3e50;
+    margin: 20px 0;
+    position: relative;
+}
+
+.guide-markers {
+    position: relative;
+    height: 100px;
+}
+
+.guide-marker {
+    position: absolute;
+    height: 12px;
+    background: #3a4a5c;
+    border-radius: 2px;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.guide-marker::before {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-left: 6px solid #3a4a5c;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+}
+
+.guide-marker::after {
+    content: attr(data-guide-id);
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.guide-marker:hover {
+    opacity: 1;
+    z-index: 10;
+}
+
+/* Add a connecting line between marker and guide result */
+.guide-marker.active::before {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    width: 1px;
+    height: 20px;
+    background: #dee2e6;
+}
