@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      platforms:
+        - "linux/amd64"
     ports:
       - "3000:3000"
     depends_on:
@@ -15,13 +17,13 @@ services:
 
   guide_design:
     build:
-      context: ./services/guide_design
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: services/guide_design/Dockerfile
       platforms:
         - "linux/amd64"
     volumes:
-      - ../../pt_guide_design:/app/packages/pt_guide_design
-      - ../../sgrna_scorer:/app/packages/sgrna_scorer
+      - ../pt_guide_design:/app/packages/pt_guide_design:ro
+      - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
     depends_on:
       - redis
     env_file:
@@ -37,7 +39,7 @@ services:
 
   db:
     image: postgres:latest
-    platform: linux/arm64/v8
+    platform: linux/amd64
     ports:
       - "5432:5432"
     volumes:
@@ -47,7 +49,7 @@ services:
 
   redis:
     image: "redis:latest"
-    platform: linux/arm64/v8
+    platform: linux/amd64
     ports:
       - "6379:6379"
 
