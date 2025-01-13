@@ -15,13 +15,13 @@ services:
 
   guide_design:
     build:
-      context: ..
-      dockerfile: server/services/guide_design/Dockerfile
+      context: ./services/guide_design
+      dockerfile: Dockerfile
       platforms:
         - "linux/amd64"
     volumes:
-      - ../pt_guide_design:/app/packages/pt_guide_design
-      - ../sgrna_scorer:/app/packages/sgrna_scorer
+      - ../../pt_guide_design:/app/packages/pt_guide_design
+      - ../../sgrna_scorer:/app/packages/sgrna_scorer
     depends_on:
       - redis
     env_file:
