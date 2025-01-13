@@ -22,69 +22,41 @@ guideGenerationQueue.process(async (job) => {
     try {
         console.log(`Starting job processing for ${resultId}`);
         
-        // First, store the job in the database
+        // Store the job in the database
         await pool.query(
             'INSERT INTO jobs (id, input_sequence, status) VALUES ($1, $2, $3)',
             [resultId, sequence, 'processing']
         );
 
-        // Run the Python script using spawn instead of exec
-        const result = await new Promise((resolve, reject) => {
-            console.log('Spawning Python process...');
-            
-            const pythonProcess = spawn('python3', [
-                path.join(process.cwd(), 'generate_guides.py')
-            ]);
+        // Send job to Redis queue for Python service
+        const redis = guideGenerationQueue.client;
+        await redis.lpush('guide_design_queue', JSON.stringify({ sequence, resultId }));
 
-            let outputData = '';
-            let errorData = '';
-
-            pythonProcess.stdout.on('data', (data) => {
-                outputData += data.toString();
-                console.log('Python stdout:', data.toString());
-            });
-
-            pythonProcess.stderr.on('data', (data) => {
-                errorData += data.toString();
-                console.error('Python stderr:', data.toString());
-            });
-
-            pythonProcess.on('error', (error) => {
-                console.error('Failed to start Python process:', error);
-                reject(error);
-            });
-
-            pythonProcess.on('close', (code) => {
-                console.log(`Python process exited with code ${code}`);
-                if (code !== 0) {
-                    reject(new Error(`Python process exited with code ${code}: ${errorData}`));
+        // Wait for results
+        const results = await new Promise((resolve, reject) => {
+            const checkResults = async () => {
+                const result = await redis.get(`results:${resultId}`);
+                if (result) {
+                    redis.del(`results:${resultId}`);
+                    resolve(JSON.parse(result));
                 } else {
-                    resolve(outputData);
+                    setTimeout(checkResults, 1000);
                 }
-            });
-
-            // Write the sequence to stdin
-            pythonProcess.stdin.write(sequence);
-            pythonProcess.stdin.end();
+            };
+            checkResults();
         });
 
-        console.log('Parsing Python output...');
-        const results = JSON.parse(result);
-
-        console.log('Updating database with results...');
         // Update the job with the results
         await pool.query(
             'UPDATE jobs SET status = $1, result_data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
             ['completed', results, resultId]
         );
 
-        console.log(`Job ${resultId} completed successfully`);
         return { resultId, status: 'completed' };
 
     } catch (error) {
         console.error('Error processing job:', error);
         
-        // Update the job status to failed
         await pool.query(
             'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             ['failed', resultId]
