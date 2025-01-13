@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.7-slim
 
 WORKDIR /app
 
@@ -18,22 +18,16 @@ RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 # Copy requirements first for better caching
 COPY services/guide_design/requirements.txt .
 
-# Install redis package first
-RUN pip install --no-cache-dir redis
-
-# Install packages in smaller chunks
+# Install packages with specific versions for Python 3.7
 RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir numpy pandas biopython gffutils pybedtools tqdm pyfaidx
+    pip install --no-cache-dir -r requirements.txt
 
-# Install scikit-learn separately
-RUN pip install --no-cache-dir scikit-learn==1.2.2
+# Create package directories
+COPY pt_guide_design /app/packages/pt_guide_design/
+COPY sgrna_scorer /app/packages/sgrna_scorer/
 
-# Install tensorflow separately
-RUN pip install --no-cache-dir tensorflow==2.12.0
-
-# Create package directories and install packages in development mode
-COPY ../pt_guide_design /app/packages/pt_guide_design/
-COPY ../sgrna_scorer /app/packages/sgrna_scorer/
+# Set PYTHONPATH environment variable
+ENV PYTHONPATH=/app/packages:$PYTHONPATH
 
 # Install the packages in development mode
 RUN cd /app/packages/sgrna_scorer && pip install -e . && \

@@ -1,16 +1,33 @@
 import json
 import sys
+import os
 import redis
 import logging
-from pt_guide_design.design_guides import GuideDesigner
 import tempfile
-import os
 
+# Setup logging first
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Add the project root to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+logger.info(f"Adding project root to path: {project_root}")
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+logger.info(f"Python path: {sys.path}")
+
+try:
+    import pt_guide_design
+    logger.info(f"pt_guide_design package found at: {pt_guide_design.__file__}")
+    from pt_guide_design.design_guides import GuideDesigner
+except ImportError as e:
+    logger.error(f"Failed to import GuideDesigner. Error: {e}")
+    logger.error(f"Python path: {sys.path}")
+    raise
 
 class GuideDesignService:
     def __init__(self):

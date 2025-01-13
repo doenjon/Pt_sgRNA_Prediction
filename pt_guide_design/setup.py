@@ -3,19 +3,23 @@ from setuptools import setup, find_packages
 setup(
     name="pt_guide_design",
     version="0.1.0",
-    packages=find_packages(),
+    packages=find_packages(include=['pt_guide_design', 'pt_guide_design.*']),
+    package_data={
+        'pt_guide_design': ['resources/*', 'crisporWebsite/*']
+    },
     install_requires=[
-        "biopython",
-        "gffutils",
-        "pybedtools",
-        "pandas",
+        "biopython>=1.81",
+        "gffutils>=0.11.1",
+        "pybedtools==0.8.0",
+        "pandas>=1.5.3",
         "numpy",
-        "tqdm",
-        "pyfaidx",
-        "scikit-learn"
+        "tqdm>=4.65.0",
+        "pyfaidx>=0.7.1",
+        "scikit-learn>=1.2.2",
+        "redis>=4.5.4"
     ],
     author="Jon Doenier",
     author_email="Doenierjon@gmail.com",
     description="CRISPR guide design for Phaeodactylum tricornutum",
-    python_requires=">=3.9",
+    python_requires=">=3.7,<3.8",
 ) 
