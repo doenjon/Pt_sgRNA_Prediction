@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY services/guide_design/requirements.txt .
+COPY server/services/guide_design/requirements.txt .
 
 # Install Python packages in stages to better handle dependencies
 RUN pip install --no-cache-dir -U pip && \
