@@ -28,8 +28,8 @@ RUN pip install --no-cache-dir scikit-learn==1.2.2
 RUN pip install --no-cache-dir tensorflow==2.12.0
 
 # Copy the packages
-COPY ../../../sgrna_scorer /app/packages/sgrna_scorer
-COPY ../../../pt_guide_design /app/packages/pt_guide_design
+COPY ../sgrna_scorer /app/packages/sgrna_scorer
+COPY ../pt_guide_design /app/packages/pt_guide_design
 
 # Install local packages
 WORKDIR /app/packages/sgrna_scorer
