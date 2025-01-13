@@ -8,15 +8,15 @@ setup(
         'pt_guide_design': ['resources/*', 'crisporWebsite/*']
     },
     install_requires=[
-        "biopython>=1.81",
-        "gffutils>=0.11.1",
+        "biopython==1.81",
+        "gffutils==0.11.1",
         "pybedtools==0.8.0",
-        "pandas>=1.5.3",
-        "numpy",
-        "tqdm>=4.65.0",
-        "pyfaidx>=0.7.1",
-        "scikit-learn>=1.2.2",
-        "redis>=4.5.4"
+        "pandas==1.3.5",
+        "numpy==1.21.6",
+        "tqdm==4.65.0",
+        "pyfaidx==0.7.1",
+        "scikit-learn==1.0.2",
+        "redis==3.5.3"
     ],
     author="Jon Doenier",
     author_email="Doenierjon@gmail.com",
