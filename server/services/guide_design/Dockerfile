@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 
 # Copy requirements first for better caching
-COPY services/guide_design/requirements.txt .
+COPY server/services/guide_design/requirements.txt .
 
 # Install packages with specific versions for Python 3.7
 RUN pip install --no-cache-dir -U pip && \
@@ -34,6 +34,6 @@ RUN cd /app/packages/sgrna_scorer && pip install -e . && \
     cd /app/packages/pt_guide_design && pip install -e .
 
 # Copy the service code
-COPY services/guide_design/service.py .
+COPY server/services/guide_design/service.py .
 
 CMD ["python", "service.py"]
