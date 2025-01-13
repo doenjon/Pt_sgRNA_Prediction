@@ -182,7 +182,7 @@ class GuideDesigner:
 
         # Don't rerun expensive command if not necessary
         if not os.path.exists(outfile_crispor):
-            cmd = f"python crisporWebsite/crispor.py --noEffScores --offtargets {outfile_offtarget} ens79PhaTri {seq_fn} {outfile_crispor}"
+            cmd = f"python crisporWebsite/crispor.py --noEffScores --genomeDir resources --offtargets {outfile_offtarget} ens79PhaTri {seq_fn} {outfile_crispor}"
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if result.returncode != 0:

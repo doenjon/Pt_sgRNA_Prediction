@@ -1,11 +1,4 @@
-from .models import BaseSequenceModel
-from .data import preprocess_sequences, load_and_preprocess_data
-from .utils import train_model, evaluate_model
+from .predict import SgRNAScorer
 
-__all__ = [
-    'BaseSequenceModel',
-    'preprocess_sequences',
-    'load_and_preprocess_data',
-    'train_model',
-    'evaluate_model'
-]
+__version__ = "0.1.0"
+__all__ = ["SgRNAScorer"]

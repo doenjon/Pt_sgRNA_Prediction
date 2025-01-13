@@ -17,6 +17,9 @@ class BaseSequenceModel(tf.keras.Model):
         self.flatten = layers.Flatten()
         self.dense1 = layers.Dense(64, activation='relu')
         self.output_layer = layers.Dense(1)
+        
+        # Build the model by calling it with a dummy input
+        self.build((None,) + input_shape)
     
     def call(self, inputs):
         x = self.embedding(inputs)
