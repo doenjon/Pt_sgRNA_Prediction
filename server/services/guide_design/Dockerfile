@@ -6,11 +6,17 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     bwa \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY services/guide_design/requirements.txt .
+
+# Install Python packages in stages to better handle dependencies
+RUN pip install --no-cache-dir -U pip && \
+    pip install --no-cache-dir numpy pandas && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the packages
 COPY sgrna_scorer /app/packages/sgrna_scorer

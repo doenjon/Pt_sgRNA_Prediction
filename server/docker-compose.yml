@@ -19,6 +19,8 @@ services:
     build:
       context: ..
       dockerfile: server/services/guide_design/Dockerfile
+      platforms:
+        - "linux/amd64"
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design
       - ../sgrna_scorer:/app/packages/sgrna_scorer
@@ -30,10 +32,10 @@ services:
       resources:
         limits:
           cpus: "1.0"
-          memory: "2G"
+          memory: "4G"
         reservations:
           cpus: "0.5"
-          memory: "1G"
+          memory: "2G"
 
   db:
     image: postgres:latest
