@@ -15,27 +15,21 @@ RUN apt-get update && apt-get install -y \
 RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 
 # Copy requirements first for better caching
-COPY server/services/guide_design/requirements.txt .
+COPY requirements.txt .
 
-# Install packages in smaller chunks with temporary directory configuration
-ENV TMPDIR=/var/tmp
-ENV PIP_NO_CACHE_DIR=1
-ENV PIP_DEFAULT_TIMEOUT=100
-
-# Install base packages first
+# Install packages in smaller chunks
 RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir numpy pandas
+    pip install --no-cache-dir numpy pandas biopython gffutils pybedtools tqdm pyfaidx
 
-# Install ML packages separately
+# Install scikit-learn separately
 RUN pip install --no-cache-dir scikit-learn==1.2.2
+
+# Install tensorflow separately
 RUN pip install --no-cache-dir tensorflow==2.12.0
 
-# Install remaining packages
-RUN pip install --no-cache-dir biopython gffutils pybedtools tqdm pyfaidx
-
-# Copy the packages with correct paths
-COPY sgrna_scorer /app/packages/sgrna_scorer
-COPY pt_guide_design /app/packages/pt_guide_design
+# Copy the packages
+COPY ../../../sgrna_scorer /app/packages/sgrna_scorer
+COPY ../../../pt_guide_design /app/packages/pt_guide_design
 
 # Install local packages
 WORKDIR /app/packages/sgrna_scorer
@@ -47,6 +41,6 @@ RUN pip install -e .
 WORKDIR /app
 
 # Copy the service code
-COPY server/services/guide_design/service.py .
+COPY service.py .
 
 CMD ["python", "service.py"]
