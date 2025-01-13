@@ -17,6 +17,18 @@ from pyfaidx import Fasta
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 import re
+import sys
+
+# Add the parent directory to Python path
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
+
+try:
+    from sgrna_scorer.predict import SgRNAScorer
+except ImportError as e:
+    logging.error(f"Could not import sgrna_scorer from {project_root}. Error: {e}")
+    raise
 
 pd.set_option("display.max_rows", None)
 pd.set_option("display.max_columns", None)
@@ -58,6 +70,14 @@ class GuideDesigner:
                 logging.error(f"Failed to create BWA index: {result.stderr}")
                 raise RuntimeError("Failed to create BWA index for genome")
 
+        # Initialize sgRNA scorer
+        try:
+            self.scorer = SgRNAScorer()
+            logging.info("Successfully initialized sgRNA scorer")
+        except Exception as e:
+            logging.error(f"Failed to initialize sgRNA scorer: {e}")
+            raise
+
     def run(self):
         """Design guides for input sequence"""
         guides_df, summary_df = self.design_guides()
@@ -86,6 +106,17 @@ class GuideDesigner:
         """Filter guides based on quality criteria"""
         logging.debug("Filtering guides")
 
+        # Score guides using sgrna-scorer
+        try:
+            # Extract 20nt guide sequences (excluding PAM)
+            sequences = [seq[:-3] for seq in df["targetSeq"].tolist()]  # Remove last 3 nucleotides (PAM)
+            scores = self.scorer.predict_sequences(sequences)
+            df["sgRNA_Scorer"] = scores  # Changed column name
+            logging.info(f"Successfully scored {len(sequences)} guide sequences")
+        except Exception as e:
+            logging.error(f"Failed to score guides: {e}")
+            df["sgRNA_Scorer"] = 0.5  # Default score if scoring fails
+        
         # Calculate off-target penalties
         mismatch_seed_penalty = 0.25
         mismatch_2_penalty = 0.25
@@ -97,8 +128,8 @@ class GuideDesigner:
                                   mismatch_3_penalty * df["mismatch_3"] + 
                                   mismatch_4_penalty * df["mismatch_4"])
 
-        # Calculate final design score based only on off-targets
-        df["design_score"] = -df["offtarget_penalty"]
+        # Design score based only on off-targets
+        df["design_score"] = -df["offtarget_penalty"]  # Removed activity score from design score
 
         # Apply filters
         mismatch_0_filter = (df.mismatch_0 == 0)
