@@ -26,8 +26,8 @@ services:
 
   guide_design:
     build:
-      context: .
-      dockerfile: services/guide_design/Dockerfile
+      context: ..
+      dockerfile: server/services/guide_design/Dockerfile
       platforms:
         - "linux/amd64"
     volumes:
