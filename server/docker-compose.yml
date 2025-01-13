@@ -9,11 +9,20 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - db
-      - redis
-      - guide_design
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      guide_design:
+        condition: service_started
     env_file:
       - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DB_HOST=db
+    restart: unless-stopped
 
   guide_design:
     build:
@@ -25,7 +34,8 @@ services:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
     depends_on:
-      - redis
+      redis:
+        condition: service_started
     env_file:
       - .env
     deploy:
@@ -44,14 +54,32 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
     env_file:
       - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
 
   redis:
     image: "redis:latest"
     platform: linux/amd64
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
 volumes:
   postgres_data:

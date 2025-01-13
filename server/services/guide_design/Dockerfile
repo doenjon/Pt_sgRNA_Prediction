@@ -17,6 +17,9 @@ RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 # Copy requirements first for better caching
 COPY services/guide_design/requirements.txt .
 
+# Install redis package first
+RUN pip install --no-cache-dir redis
+
 # Install packages in smaller chunks
 RUN pip install --no-cache-dir -U pip && \
     pip install --no-cache-dir numpy pandas biopython gffutils pybedtools tqdm pyfaidx
