@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     bwa \
     gcc \
     python3-dev \
+    git \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -30,10 +31,14 @@ RUN pip install --no-cache-dir scikit-learn==1.2.2
 # Install tensorflow separately
 RUN pip install --no-cache-dir tensorflow==2.12.0
 
-# Create package directories
-RUN mkdir -p /app/packages/sgrna_scorer /app/packages/pt_guide_design
+# Create package directories and install packages in development mode
+COPY ../pt_guide_design /app/packages/pt_guide_design/
+COPY ../sgrna_scorer /app/packages/sgrna_scorer/
 
-# The actual packages will be mounted as volumes
+# Install the packages in development mode
+RUN cd /app/packages/sgrna_scorer && pip install -e . && \
+    cd /app/packages/pt_guide_design && pip install -e .
+
 # Copy the service code
 COPY services/guide_design/service.py .
 
