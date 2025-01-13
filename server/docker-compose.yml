@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - .:/usr/src/app
     ports:
       - "3000:3000"
     depends_on:
@@ -19,21 +17,10 @@ services:
     build:
       context: ..
       dockerfile: server/services/guide_design/Dockerfile
-    volumes:
-      - ../pt_guide_design:/app/packages/pt_guide_design
-      - ../sgrna_scorer:/app/packages/sgrna_scorer
     depends_on:
       - redis
     env_file:
       - .env
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "2G"
-        reservations:
-          cpus: "0.5"
-          memory: "1G"
 
   db:
     image: postgres:latest
@@ -42,7 +29,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db:/docker-entrypoint-initdb.d
     env_file:
       - .env
 
