@@ -1,71 +1,50 @@
-# Build stage
-FROM python:3.9-slim AS builder
-
-WORKDIR /app
-
-# Set environment variables for pip
-ENV TMPDIR=/var/tmp \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
-
-# Create and set permissions for temp directories
-RUN mkdir -p /var/tmp && \
-    chmod 777 /var/tmp
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    zlib1g-dev \
-    bwa \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy and install requirements
-COPY server/services/guide_design/requirements.txt .
-RUN --mount=type=tmpfs,target=/var/tmp \
-    pip install --no-cache-dir -r requirements.txt
-
-# Final stage
 FROM python:3.9-slim
 
 WORKDIR /app
 
-# Set environment variables
-ENV TMPDIR=/var/tmp \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
-
-# Create and set permissions for temp directories
-RUN mkdir -p /var/tmp && \
-    chmod 777 /var/tmp
-
-# Copy Python packages from builder
-COPY --from=builder /usr/local/lib/python3.9/site-packages/ /usr/local/lib/python3.9/site-packages/
-COPY --from=builder /usr/local/bin/ /usr/local/bin/
-
-# Install runtime dependencies
+# Install system dependencies and clean up in the same layer
 RUN apt-get update && apt-get install -y \
+    build-essential \
     bwa \
     gcc \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create and set permissions for temp directories
+RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 
 # Copy requirements first for better caching
 COPY server/services/guide_design/requirements.txt .
 
-# Install Python packages in stages to better handle dependencies
-RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir numpy pandas && \
-    pip install --no-cache-dir -r requirements.txt
+# Install packages in smaller chunks with temporary directory configuration
+ENV TMPDIR=/var/tmp
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DEFAULT_TIMEOUT=100
 
-# Copy the packages
+# Install base packages first
+RUN pip install --no-cache-dir -U pip && \
+    pip install --no-cache-dir numpy pandas
+
+# Install ML packages separately
+RUN pip install --no-cache-dir scikit-learn==1.2.2
+RUN pip install --no-cache-dir tensorflow==2.12.0
+
+# Install remaining packages
+RUN pip install --no-cache-dir biopython gffutils pybedtools tqdm pyfaidx
+
+# Copy the packages with correct paths
 COPY sgrna_scorer /app/packages/sgrna_scorer
 COPY pt_guide_design /app/packages/pt_guide_design
 
-# Install packages in development mode with temp directory handling
-RUN --mount=type=tmpfs,target=/var/tmp \
-    pip install --no-cache-dir -e /app/packages/sgrna_scorer && \
-    pip install --no-cache-dir -e /app/packages/pt_guide_design
+# Install local packages
+WORKDIR /app/packages/sgrna_scorer
+RUN pip install -e .
+
+WORKDIR /app/packages/pt_guide_design
+RUN pip install -e .
+
+WORKDIR /app
 
 # Copy the service code
 COPY server/services/guide_design/service.py .
