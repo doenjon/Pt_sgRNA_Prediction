@@ -33,6 +33,8 @@ services:
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
+    environment:
+      - PYTHONPATH=/app/packages:${PYTHONPATH}
     depends_on:
       redis:
         condition: service_started
