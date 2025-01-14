@@ -6,6 +6,11 @@ services:
       dockerfile: Dockerfile
       platforms:
         - "linux/amd64"
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - GIT_COMMIT=${GIT_COMMIT:-latest}
+      cache_from:
+        - app:latest
     ports:
       - "80:3000"
     depends_on:
@@ -30,6 +35,11 @@ services:
       dockerfile: server/services/guide_design/Dockerfile
       platforms:
         - "linux/amd64"
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - GIT_COMMIT=${GIT_COMMIT:-latest}
+      cache_from:
+        - guide_design:latest
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
