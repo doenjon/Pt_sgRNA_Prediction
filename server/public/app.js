@@ -88,16 +88,18 @@ function fetchResults(resultId) {
                     // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
                     
-                    // Ensure loading state is visible
+                    // Ensure loading state is visible and map is hidden
                     loadingState.style.display = 'block';
                     resultsContent.style.display = 'none';
                     errorState.style.display = 'none';
+                    document.getElementById('sequenceMapSection').style.display = 'none';
                     
                 } else if (data.status === 'completed') {
                     // Results are ready
                     loadingState.style.display = 'none';
                     resultsContent.style.display = 'block';
                     errorState.style.display = 'none';
+                    document.getElementById('sequenceMapSection').style.display = 'block';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
                     downloadBtn.disabled = false;
@@ -206,7 +208,7 @@ function createSequenceMap(sequence, guides) {
     rulerNumbers.innerHTML = '';
     rulerMarks.innerHTML = '';
     
-    // Create tick marks every 20bp
+    // Create numbers every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
         // Create number
         const number = document.createElement('span');
@@ -215,7 +217,10 @@ function createSequenceMap(sequence, guides) {
         number.style.transform = 'translateX(-50%)';
         number.textContent = i;
         rulerNumbers.appendChild(number);
+    }
 
+    // Create tick marks every 2bp
+    for (let i = 0; i <= seqLength; i += 2) {
         // Create tick mark
         const tick = document.createElement('div');
         tick.className = 'ruler-tick';
