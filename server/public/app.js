@@ -70,43 +70,62 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchResults(resultId) {
-    fetch(`${API_BASE_URL}/api/results/${resultId}`)
-        .then(response => {
-            console.log('API Response:', response.status);
-            if (!response.ok) {
-                throw new Error('Results not found');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received data:', data);
-            displayResults(data);
-            createSequenceMap(data.inputSequence, data.guides);
-            document.getElementById('downloadBtn').disabled = false;
-        })
-        .catch(error => {
-            console.error('Error fetching results:', error);
-            document.getElementById('results').innerHTML = `
-                <div class="alert alert-danger">
-                    Failed to load results. Please try again.
-                </div>
-            `;
-        });
+    const loadingState = document.getElementById('loadingState');
+    const resultsContent = document.getElementById('resultsContent');
+    const errorState = document.getElementById('errorState');
+    const downloadBtn = document.getElementById('downloadBtn');
+
+    function pollResults() {
+        fetch(`${API_BASE_URL}/api/results/${resultId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'processing') {
+                    // If still processing, continue polling after a delay
+                    setTimeout(pollResults, 2000);
+                } else {
+                    // Results are ready
+                    loadingState.style.display = 'none';
+                    resultsContent.style.display = 'block';
+                    displayResults(data);
+                    createSequenceMap(data.inputSequence, data.guides);
+                    downloadBtn.disabled = false;
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching results:', error);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'block';
+                document.getElementById('errorMessage').textContent = 
+                    error.message || 'Failed to load results. Please try again.';
+            });
+    }
+
+    // Show initial loading state
+    loadingState.style.display = 'block';
+    resultsContent.style.display = 'none';
+    errorState.style.display = 'none';
+    downloadBtn.disabled = true;
+
+    // Start polling
+    pollResults();
 }
 
 function displayResults(data) {
     if (!data || !data.guides || data.error) {
-        const resultsContainer = document.getElementById('results');
-        resultsContainer.innerHTML = `
-            <div class="alert alert-danger">
-                ${data?.error || 'Failed to generate guides. Please try again.'}
-            </div>
-        `;
+        const errorState = document.getElementById('errorState');
+        errorState.style.display = 'block';
+        document.getElementById('errorMessage').textContent = 
+            data?.error || 'Failed to generate guides. Please try again.';
         return;
     }
 
     console.log('Displaying results:', data);
-    const resultsContainer = document.getElementById('results');
+    const resultsContent = document.getElementById('resultsContent');
     let html = '';
 
     // Display input sequence
@@ -148,7 +167,7 @@ function displayResults(data) {
         `;
     });
 
-    resultsContainer.innerHTML = html;
+    resultsContent.innerHTML = html;
 }
 
 function createSequenceMap(sequence, guides) {
