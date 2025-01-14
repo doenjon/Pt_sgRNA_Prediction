@@ -298,7 +298,17 @@ code {
 }
 
 .guide-marker::before {
-    display: none;
+    content: attr(data-guide-id);
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: #6c757d;
+    background: white;
+    padding: 0 4px;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
 }
 
 .guide-marker[data-strand="+"]::after {
@@ -446,7 +456,7 @@ code {
 
 .sequence-text {
     position: absolute;
-    top: 35px;  /* Move below the tick marks */
+    top: 35px;
     left: 0;
     right: 0;
     font-family: monospace;
@@ -454,5 +464,7 @@ code {
     color: #6c757d;
     white-space: pre;
     overflow: hidden;
-    letter-spacing: 0;  /* We'll handle spacing in JavaScript */
+    height: 20px;
+    min-height: 20px;
+    z-index: 1;
 }

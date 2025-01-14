@@ -292,18 +292,13 @@ function createSequenceMap(sequence, guides) {
 
     // Add sequence text above the line
     const sequenceText = document.getElementById('sequenceText');
+    console.log('Adding sequence text:', sequence);  // Debug log
     // Create evenly spaced characters
     const charWidth = 100 / seqLength;  // Width percentage for each character
+    console.log('Character width:', charWidth);  // Debug log
     sequenceText.innerHTML = sequence.split('').map((char, i) => 
         `<span style="position: absolute; left: ${charWidth * i}%; transform: translateX(-50%)">${char}</span>`
     ).join('');
-
-    // Add mousemove handler to position tooltip
-    mainSequence.addEventListener('mousemove', (e) => {
-        const rect = mainSequence.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        tooltip.style.left = `${x}px`;
-    });
 }
 
 // Helper function to check if a position overlaps with existing guides
