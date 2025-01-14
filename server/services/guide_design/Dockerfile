@@ -2,16 +2,7 @@ FROM python:3.7-slim
 
 WORKDIR /app
 
-# Add build arg for cache busting when needed
-ARG GIT_COMMIT=latest
-ARG BUILDKIT_INLINE_CACHE=1
-
-# Copy requirements first and install dependencies
-COPY server/services/guide_design/requirements.txt .
-RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Install system dependencies
+# Install system dependencies first
 RUN apt-get update && apt-get install -y \
     build-essential \
     bwa \
@@ -27,16 +18,20 @@ RUN apt-get update && apt-get install -y \
 # Create and set permissions for temp directories
 RUN mkdir -p /var/tmp && chmod 777 /var/tmp
 
+# Now install Python packages
+COPY server/services/guide_design/requirements.txt .
+RUN pip install --no-cache-dir -U pip && \
+    pip install --no-cache-dir -r requirements.txt
+
 # Copy setup files first to cache dependency installation
 COPY pt_guide_design/setup.py /app/packages/pt_guide_design/
 COPY sgrna_scorer/setup.py /app/packages/sgrna_scorer/
 
-# Install packages in development mode
+# Install the packages in development mode
 RUN cd /app/packages/sgrna_scorer && pip install -e . && \
     cd /app/packages/pt_guide_design && pip install -e .
 
 # Copy source code
-# Use .dockerignore to exclude unnecessary files
 COPY pt_guide_design /app/packages/pt_guide_design/
 COPY sgrna_scorer /app/packages/sgrna_scorer/
 
