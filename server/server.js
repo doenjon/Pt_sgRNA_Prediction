@@ -73,7 +73,10 @@ app.get('/api/results/:resultId', async (req, res) => {
         const result = await pool.query(query, [resultId]);
         
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Results not found' });
+            return res.status(202).json({ 
+                status: 'processing',
+                message: 'Job is being processed'
+            });
         }
 
         const job = result.rows[0];
@@ -86,8 +89,9 @@ app.get('/api/results/:resultId', async (req, res) => {
             });
         }
 
-        // Format the response
+        // Format the response for completed jobs
         const response = {
+            status: 'completed',
             inputSequence: job.input_sequence,
             guides: job.result_data.guides.map(guide => ({
                 sequence: guide.sequence,

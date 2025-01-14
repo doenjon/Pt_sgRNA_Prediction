@@ -78,8 +78,8 @@ function fetchResults(resultId) {
     function pollResults() {
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                if (response.status === 500) {
+                    throw new Error('Server error');
                 }
                 return response.json();
             })
@@ -87,19 +87,30 @@ function fetchResults(resultId) {
                 if (data.status === 'processing') {
                     // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
-                } else {
+                    
+                    // Ensure loading state is visible
+                    loadingState.style.display = 'block';
+                    resultsContent.style.display = 'none';
+                    errorState.style.display = 'none';
+                    
+                } else if (data.status === 'completed') {
                     // Results are ready
                     loadingState.style.display = 'none';
                     resultsContent.style.display = 'block';
+                    errorState.style.display = 'none';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
                     downloadBtn.disabled = false;
+                } else {
+                    // Handle error state
+                    throw new Error(data.error || 'Failed to process results');
                 }
             })
             .catch(error => {
                 console.error('Error fetching results:', error);
                 loadingState.style.display = 'none';
                 errorState.style.display = 'block';
+                resultsContent.style.display = 'none';
                 document.getElementById('errorMessage').textContent = 
                     error.message || 'Failed to load results. Please try again.';
             });
@@ -145,21 +156,30 @@ function displayResults(data) {
                 </div>
                 <div class="sequence-display">
                     <code>${guide.sequence}</code>
+                    <small class="text-muted ms-2">
+                        <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'} me-1"></i>
+                        ${guide.strand} strand
+                    </small>
                 </div>
                 <div class="row mt-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <small class="text-muted">
                             <i class="fas fa-map-marker-alt me-2"></i>Position: ${guide.position}
                         </small>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <small class="text-muted">
                             <i class="fas fa-percentage me-2"></i>GC Content: ${guide.gcContent}%
                         </small>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <small class="text-muted">
                             <i class="fas fa-exclamation-triangle me-2"></i>Off-targets: ${guide.offTargets}
+                        </small>
+                    </div>
+                    <div class="col-md-3">
+                        <small class="text-muted">
+                            <i class="fas fa-dna me-2"></i>Strand: ${guide.strand}
                         </small>
                     </div>
                 </div>
@@ -201,10 +221,21 @@ function createSequenceMap(sequence, guides) {
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
         marker.setAttribute('data-guide-id', index + 1);
+        marker.setAttribute('data-strand', guide.strand);
         
-        // Calculate horizontal position and width
-        const leftPos = (guide.position / seqLength) * 100;
-        const width = (guide.sequence.length / seqLength) * 100;
+        // Calculate position based on strand
+        const guideLength = guide.sequence.length;
+        let leftPos;
+        
+        if (guide.strand === '+') {
+            // For positive strand, position is the start
+            leftPos = (guide.position / seqLength) * 100;
+        } else {
+            // For negative strand, position is the end, so we need to subtract the length
+            leftPos = ((guide.position - guideLength) / seqLength) * 100;
+        }
+        
+        const width = (guideLength / seqLength) * 100;
         marker.style.left = `${leftPos}%`;
         marker.style.width = `${width}%`;
         

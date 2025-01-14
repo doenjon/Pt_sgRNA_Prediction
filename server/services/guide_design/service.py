@@ -8,7 +8,8 @@ import tempfile
 # Setup logging first
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
 logger = logging.getLogger(__name__)
 
@@ -76,7 +77,8 @@ class GuideDesignService:
                         'position': row['pos'],
                         'score': float(row['design_score']),
                         'gc_content': float((row['targetSeq'].count('G') + row['targetSeq'].count('C')) / len(row['targetSeq']) * 100),
-                        'off_targets': int(row['mismatch_2'] + row['mismatch_3'] + row['mismatch_4'])
+                        'off_targets': int(row['mismatch_2'] + row['mismatch_3'] + row['mismatch_4']),
+                        'strand': '+' if row['strand'] == 1 else '-'
                     }
                     guides.append(guide)
 
@@ -85,6 +87,10 @@ class GuideDesignService:
                     'inputSequence': sequence,
                     'summary': summary_df.to_dict(orient='records')[0]
                 }
+
+                # Add logging for each guide score
+                for guide in guides:
+                    logging.info(f"Guide Score - Sequence: {guide['sequence']}, Score: {guide['score']:.2f}")
 
                 return results
 

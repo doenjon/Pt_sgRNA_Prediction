@@ -303,17 +303,32 @@ code {
 }
 
 .guide-marker::before {
+    display: none;
+}
+
+.guide-marker[data-strand="+"]::after {
     content: '';
     position: absolute;
     right: -6px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 0;
     border-left: 6px solid #3a4a5c;
     border-top: 6px solid transparent;
     border-bottom: 6px solid transparent;
+    height: 0;
 }
 
-.guide-marker::after {
+.guide-marker[data-strand="-"]::after {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 0;
+    border-right: 6px solid #3a4a5c;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    height: 0;
+}
+
+.guide-marker::before {
     content: attr(data-guide-id);
     position: absolute;
     top: -20px;
