@@ -202,16 +202,25 @@ function createSequenceMap(sequence, guides) {
 
     // Create ruler with precise bp positions
     const rulerNumbers = document.getElementById('rulerNumbers');
+    const rulerMarks = document.getElementById('rulerMarks');
     rulerNumbers.innerHTML = '';
+    rulerMarks.innerHTML = '';
     
     // Create tick marks every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
-        const tick = document.createElement('span');
-        tick.style.position = 'absolute';  // Make sure ticks are absolutely positioned
+        // Create number
+        const number = document.createElement('span');
+        number.style.position = 'absolute';
+        number.style.left = `${bpToPercent(i)}%`;
+        number.style.transform = 'translateX(-50%)';
+        number.textContent = i;
+        rulerNumbers.appendChild(number);
+
+        // Create tick mark
+        const tick = document.createElement('div');
+        tick.className = 'ruler-tick';
         tick.style.left = `${bpToPercent(i)}%`;
-        tick.style.transform = 'translateX(-50%)';  // Center the tick mark
-        tick.textContent = i;
-        rulerNumbers.appendChild(tick);
+        rulerMarks.appendChild(tick);
     }
 
     // Create guide markers
