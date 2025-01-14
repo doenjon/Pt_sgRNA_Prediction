@@ -192,83 +192,86 @@ function displayResults(data) {
 }
 
 function createSequenceMap(sequence, guides) {
-    console.log('Creating sequence map:', { sequence, guides });
     const seqLength = sequence.length;
-    document.getElementById('seqLength').textContent = seqLength;
+    console.log(`Sequence length: ${seqLength}bp`);
 
-    // Create ruler numbers
+    // Create a scale function to convert bp positions to percentages
+    function bpToPercent(bp) {
+        return (bp / seqLength) * 100;
+    }
+
+    // Create ruler with precise bp positions
     const rulerNumbers = document.getElementById('rulerNumbers');
     rulerNumbers.innerHTML = '';
     
+    // Create tick marks every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
-        const number = document.createElement('span');
-        number.style.position = 'absolute';
-        number.style.left = `${(i / seqLength) * 100}%`;
-        number.textContent = i;
-        rulerNumbers.appendChild(number);
+        const tick = document.createElement('span');
+        tick.style.left = `${bpToPercent(i)}%`;
+        tick.textContent = i;
+        rulerNumbers.appendChild(tick);
     }
 
-    // Create guide markers with staggering
+    // Create guide markers
     const guideMarkers = document.getElementById('guideMarkers');
     guideMarkers.innerHTML = '';
     
-    // Sort guides by position to check for overlaps
-    const sortedGuides = [...guides].sort((a, b) => a.position - b.position);
-    
-    // Track used vertical positions
-    const usedPositions = new Set();
-    
-    sortedGuides.forEach((guide, index) => {
+    guides.forEach((guide, index) => {
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
-        
-        // Calculate position based on strand
-        const guideLength = guide.sequence.length;  // Should be 23bp
-        let leftPos;
-        
+
+        // Calculate exact guide position
+        const GUIDE_LENGTH = 23;  // bp
+        const PAM_LENGTH = 3;     // bp
+        let guideStart;          // leftmost bp position
+
         if (guide.strand === '+') {
-            // For positive strand, cut site is 3bp from right end
-            // So position (cut site) = left_position + 20
-            // Therefore left_position = position - 20
-            leftPos = ((guide.position - 20) / seqLength) * 100;
+            // For + strand, position marks cut site which is 3bp from right
+            // So: position = guideStart + 20 (because cut site is -3 from end)
+            guideStart = guide.position - 20;
         } else {
-            // For negative strand, cut site is 3bp from left end
-            // So position (cut site) = left_position + 3
-            // Therefore left_position = position - 3
-            leftPos = ((guide.position - 3) / seqLength) * 100;
+            // For - strand, position marks cut site which is 3bp from left
+            // So: position = guideStart + 3
+            guideStart = guide.position - 3;
         }
-        
-        // Calculate width as percentage of sequence length
-        const width = (23 / seqLength) * 100;  // Always 23bp for CRISPR guides
-        marker.style.left = `${leftPos}%`;
-        marker.style.width = `${width}%`;
-        
-        // Find a suitable vertical position
+
+        // Convert bp positions to percentages
+        const leftPercent = bpToPercent(guideStart);
+        const widthPercent = bpToPercent(GUIDE_LENGTH);
+
+        console.log(`Guide ${index + 1}:`, {
+            strand: guide.strand,
+            position: guide.position,
+            guideStart,
+            guideEnd: guideStart + GUIDE_LENGTH,
+            leftPercent: leftPercent.toFixed(2) + '%',
+            widthPercent: widthPercent.toFixed(2) + '%'
+        });
+
+        marker.style.left = `${leftPercent}%`;
+        marker.style.width = `${widthPercent}%`;
+
+        // Handle vertical stacking (existing code)
         let verticalPosition = 0;
-        while (isPositionOverlapping(leftPos, width, verticalPosition, usedPositions)) {
-            verticalPosition += 20; // Increment by 20px until we find a free spot
+        while (isPositionOverlapping(leftPercent, widthPercent, verticalPosition, usedPositions)) {
+            verticalPosition += 20;
         }
-        
         marker.style.top = `${verticalPosition}px`;
-        usedPositions.add({ left: leftPos, width, top: verticalPosition });
-        
-        // Add event listeners
+        usedPositions.add({ left: leftPercent, width: widthPercent, top: verticalPosition });
+
+        // Add event listeners (existing code)
         marker.addEventListener('mouseenter', () => {
             const guideElement = document.querySelector(`#guide-${index + 1}`);
-            if (guideElement) {
-                guideElement.classList.add('highlight');
-            }
+            if (guideElement) guideElement.classList.add('highlight');
         });
         
         marker.addEventListener('mouseleave', () => {
             const guideElement = document.querySelector(`#guide-${index + 1}`);
-            if (guideElement) {
-                guideElement.classList.remove('highlight');
-            }
+            if (guideElement) guideElement.classList.remove('highlight');
         });
-        
+
         guideMarkers.appendChild(marker);
     });
 }
