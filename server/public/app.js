@@ -143,8 +143,13 @@ function displayResults(data) {
 
     // Display input sequence
     html += `
-        <div class="sequence-display mb-4">
-            <code>${data.inputSequence}</code>
+        <div class="guide-card mb-4">
+            <div class="guide-sequence">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Input Sequence</h5>
+                </div>
+                <code>${data.inputSequence}</code>
+            </div>
         </div>
     `;
 
@@ -311,4 +316,17 @@ function isPositionOverlapping(left, width, top, usedPositions) {
     }
     return false;
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const resultId = urlParams.get('resultId');
+            if (resultId) {
+                window.location.href = `${API_BASE_URL}/api/download/${resultId}`;
+            }
+        });
+    }
+});
 
