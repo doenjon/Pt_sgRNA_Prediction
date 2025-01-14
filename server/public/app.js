@@ -152,7 +152,7 @@ function displayResults(data) {
             <div class="guide-result" id="guide-${index + 1}">
                 <div class="d-flex justify-content-between align-items-start">
                     <h5>Guide ${index + 1}</h5>
-                    <span class="score-badge">Score: ${guide.score.toFixed(2)}</span>
+                    <span class="score-badge">Score: ${Number(guide.score).toFixed(2)}</span>
                 </div>
                 <div class="sequence-display">
                     <code>${guide.sequence}</code>
