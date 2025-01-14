@@ -109,15 +109,3 @@ app.get('/api/results/:resultId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-if (process.env.NODE_ENV === 'development') {
-    // Add live reload capability
-    const livereload = require('livereload');
-    const connectLivereload = require('connect-livereload');
-    
-    const liveReloadServer = livereload.createServer();
-    liveReloadServer.watch(path.join(__dirname, 'public'));
-    
-    // Inject livereload script into pages
-    app.use(connectLivereload());
-}
