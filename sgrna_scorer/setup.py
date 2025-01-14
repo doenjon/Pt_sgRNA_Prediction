@@ -8,7 +8,8 @@ setup(
         "tensorflow==2.10.1",
         "numpy==1.21.6",
         "pandas==1.3.5",
-        "scikit-learn==1.0.2"
+        "scikit-learn==1.0.2",
+        "matplotlib==3.5.3"
     ],
     author="Jon Doenier",
     author_email="Doenierjon@gmail.com",
