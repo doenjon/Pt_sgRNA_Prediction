@@ -211,9 +211,13 @@ class GuideDesigner:
         outfile_crispor = f"{outdir}/{name}_guides.csv"
         outfile_offtarget = f"{outdir}/{name}_offtarget.csv"
 
+        # Get absolute path to CRISPOR script
+        crispor_path = os.path.join(os.path.dirname(__file__), "crisporWebsite", "crispor.py")
+        resources_dir = os.path.join(os.path.dirname(__file__), "resources")
+
         # Don't rerun expensive command if not necessary
         if not os.path.exists(outfile_crispor):
-            cmd = f"python crisporWebsite/crispor.py --noEffScores --genomeDir resources --offtargets {outfile_offtarget} ens79PhaTri {seq_fn} {outfile_crispor}"
+            cmd = f"python {crispor_path} --noEffScores --genomeDir {resources_dir} --offtargets {outfile_offtarget} ens79PhaTri {seq_fn} {outfile_crispor}"
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if result.returncode != 0:

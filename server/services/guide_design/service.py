@@ -42,6 +42,9 @@ class GuideDesignService:
             sequence = job_data['sequence']
             result_id = job_data['resultId']
 
+            # Set model path from environment variable
+            os.environ['MODEL_PATH'] = os.getenv('MODEL_PATH', '/app/packages/sgrna_scorer/resources/model.weights.h5')
+
             # Create temporary input file
             with tempfile.NamedTemporaryFile(mode='w', suffix='.fa', delete=False) as temp_file:
                 temp_file.write(f">input\n{sequence}\n")
