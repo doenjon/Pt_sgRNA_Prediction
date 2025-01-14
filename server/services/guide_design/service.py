@@ -57,6 +57,7 @@ class GuideDesignService:
                         self.p = "result"
                         self.num_guides = 25
                         self.t = 1
+                        self.genome = os.getenv('GENOME_PATH', '/app/packages/pt_guide_design/resources/Phaeodactylum_tricornutum.ASM15095v2.dna.toplevel.fa')
 
                 args = Args()
                 
