@@ -86,6 +86,11 @@ app.get('/api/results/:resultId', async (req, res) => {
             has_guides: job.result_data?.guides?.length > 0
         });
 
+        // Log the first guide's complete data
+        if (job.result_data?.guides?.length > 0) {
+            console.log('First guide complete data:', job.result_data.guides[0]);
+        }
+
         // Check if job is still processing
         if (job.status !== 'completed' || !job.result_data?.guides) {
             return res.status(202).json({ 
@@ -98,14 +103,17 @@ app.get('/api/results/:resultId', async (req, res) => {
         const response = {
             status: 'completed',
             inputSequence: job.input_sequence,
-            guides: job.result_data.guides.map(guide => ({
-                sequence: guide.sequence,
-                position: guide.position,
-                score: Number(guide.sgRNA_Scorer || guide.score),
-                gcContent: guide.gc_content,
-                offTargets: guide.off_targets,
-                strand: guide.guideId?.includes('forw') ? '+' : '-'
-            })),
+            guides: job.result_data.guides.map(guide => {
+                console.log('Processing guide:', guide);  // Log each guide as we process it
+                return {
+                    sequence: guide.sequence,
+                    position: guide.position,
+                    score: Number(guide.sgRNA_Scorer || guide.score),
+                    gcContent: guide.gc_content,
+                    offTargets: guide.off_targets,
+                    strand: guide.strand
+                };
+            }),
             createdAt: job.created_at
         };
 
