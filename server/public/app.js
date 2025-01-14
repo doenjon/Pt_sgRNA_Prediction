@@ -225,18 +225,23 @@ function createSequenceMap(sequence, guides) {
         marker.setAttribute('data-strand', guide.strand);
         
         // Calculate position based on strand
-        const guideLength = guide.sequence.length;
+        const guideLength = guide.sequence.length;  // Should be 23bp
         let leftPos;
         
         if (guide.strand === '+') {
-            // For positive strand, position is the start
-            leftPos = (guide.position / seqLength) * 100;
+            // For positive strand, cut site is 3bp from right end
+            // So position (cut site) = left_position + 20
+            // Therefore left_position = position - 20
+            leftPos = ((guide.position - 20) / seqLength) * 100;
         } else {
-            // For negative strand, position is the end, so we need to subtract the length
-            leftPos = ((guide.position - guideLength) / seqLength) * 100;
+            // For negative strand, cut site is 3bp from left end
+            // So position (cut site) = left_position + 3
+            // Therefore left_position = position - 3
+            leftPos = ((guide.position - 3) / seqLength) * 100;
         }
         
-        const width = (guideLength / seqLength) * 100;
+        // Calculate width as percentage of sequence length
+        const width = (23 / seqLength) * 100;  // Always 23bp for CRISPR guides
         marker.style.left = `${leftPos}%`;
         marker.style.width = `${width}%`;
         
