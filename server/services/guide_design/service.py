@@ -55,8 +55,7 @@ class GuideDesignService:
                         self.i = input_file
                         self.o = temp_dir
                         self.p = "result"
-                        self.num_guides = 5
-                        self.genome = "/app/pt_guide_design/resources/genome.fa"
+                        self.num_guides = 25
                         self.t = 1
 
                 args = Args()
@@ -65,9 +64,21 @@ class GuideDesignService:
                 designer = GuideDesigner(args)
                 guides_df, summary_df = designer.design_guides()
 
-                # Convert results to JSON
+                # Convert results to JSON with the expected format
+                guides = []
+                for _, row in guides_df.iterrows():
+                    guide = {
+                        'sequence': row['targetSeq'],
+                        'position': row['pos'],
+                        'score': float(row['design_score']),
+                        'gc_content': float((row['targetSeq'].count('G') + row['targetSeq'].count('C')) / len(row['targetSeq']) * 100),
+                        'off_targets': int(row['mismatch_2'] + row['mismatch_3'] + row['mismatch_4'])
+                    }
+                    guides.append(guide)
+
                 results = {
-                    'guides': guides_df.to_dict(orient='records'),
+                    'guides': guides,
+                    'inputSequence': sequence,
                     'summary': summary_df.to_dict(orient='records')[0]
                 }
 
@@ -75,7 +86,12 @@ class GuideDesignService:
 
         except Exception as e:
             logger.error(f"Error processing job: {str(e)}", exc_info=True)
-            return {'error': str(e)}
+            return {
+                'error': str(e),
+                'guides': [],
+                'inputSequence': sequence,
+                'summary': {}
+            }
         finally:
             # Cleanup
             if 'input_file' in locals():

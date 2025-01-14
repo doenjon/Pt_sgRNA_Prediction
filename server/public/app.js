@@ -90,6 +90,16 @@ function fetchResults(resultId) {
 }
 
 function displayResults(data) {
+    if (!data || !data.guides || data.error) {
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = `
+            <div class="alert alert-danger">
+                ${data?.error || 'Failed to generate guides. Please try again.'}
+            </div>
+        `;
+        return;
+    }
+
     console.log('Displaying results:', data);
     const resultsContainer = document.getElementById('results');
     let html = '';
