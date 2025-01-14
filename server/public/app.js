@@ -233,12 +233,11 @@ function createSequenceMap(sequence, guides) {
         let guideStart;          // leftmost bp position
 
         if (guide.strand === '+') {
-            // For + strand, cut site is 3bp from right
-            // So: position = guideStart + 20
-            guideStart = guide.position - 20;
+            // For + strand, cut site is 3bp from right, shift left by 1bp
+            guideStart = guide.position - 21;
         } else {
-            // For - strand, position should be at the left edge
-            guideStart = guide.position;
+            // For - strand, shift left by 1bp
+            guideStart = guide.position - 1;
         }
 
         // Convert bp positions to percentages
@@ -297,7 +296,7 @@ function createSequenceMap(sequence, guides) {
     const charWidth = 100 / seqLength;  // Width percentage for each character
     console.log('Character width:', charWidth);  // Debug log
     sequenceText.innerHTML = sequence.split('').map((char, i) => 
-        `<span style="position: absolute; left: calc(${charWidth * i}% + ${charWidth/2}%)">${char}</span>`
+        `<span style="position: absolute; left: ${charWidth * i}%">${char}</span>`
     ).join('');
 }
 
