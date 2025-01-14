@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     git \
+    bedtools \
+    samtools \
+    tabix \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -33,10 +36,12 @@ ENV PYTHONPATH=/app/packages:$PYTHONPATH
 RUN cd /app/packages/sgrna_scorer && pip install -e . && \
     cd /app/packages/pt_guide_design && pip install -e .
 
+# Verify CRISPOR files
+RUN ls -la /app/packages/pt_guide_design/crisporWebsite && \
+    chmod +x /app/packages/pt_guide_design/crisporWebsite/crispor.py && \
+    echo "CRISPOR files verified"
+
 # Copy the service code
 COPY server/services/guide_design/service.py .
-
-# Add these lines to make CRISPOR script executable
-RUN chmod +x /app/packages/pt_guide_design/crisporWebsite/crispor.py
 
 CMD ["python", "service.py"]
