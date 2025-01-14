@@ -7,7 +7,7 @@ services:
       platforms:
         - "linux/amd64"
     ports:
-      - "0.0.0.0:3000:3000"
+      - "0.0.0.0:80:3000"
     depends_on:
       db:
         condition: service_healthy
@@ -33,9 +33,11 @@ services:
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
+      - ../sgrna_scorer/resources:/app/packages/sgrna_scorer/resources:ro
     environment:
       - PYTHONPATH=/app/packages:${PYTHONPATH}
       - GENOME_PATH=/app/packages/pt_guide_design/resources/Phaeodactylum_tricornutum.ASM15095v2.dna.toplevel.fa
+      - MODEL_PATH=/app/packages/sgrna_scorer/resources/model.weights.h5
     depends_on:
       redis:
         condition: service_started

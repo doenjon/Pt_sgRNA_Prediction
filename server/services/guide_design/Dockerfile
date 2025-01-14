@@ -36,4 +36,7 @@ RUN cd /app/packages/sgrna_scorer && pip install -e . && \
 # Copy the service code
 COPY server/services/guide_design/service.py .
 
+# Add these lines to make CRISPOR script executable
+RUN chmod +x /app/packages/pt_guide_design/crisporWebsite/crispor.py
+
 CMD ["python", "service.py"]
