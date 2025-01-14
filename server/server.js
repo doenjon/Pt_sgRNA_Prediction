@@ -80,10 +80,14 @@ app.get('/api/results/:resultId', async (req, res) => {
         }
 
         const job = result.rows[0];
-        console.log('Raw guide data from database:', job.result_data.guides[0]);  // Log first guide data
+        console.log('Raw job data from database:', {
+            status: job.status,
+            result_data: job.result_data,
+            has_guides: job.result_data?.guides?.length > 0
+        });
 
         // Check if job is still processing
-        if (job.status !== 'completed') {
+        if (job.status !== 'completed' || !job.result_data?.guides) {
             return res.status(202).json({ 
                 status: job.status,
                 message: 'Results are still processing'
