@@ -69,16 +69,27 @@ class GuideDesignService:
                 designer = GuideDesigner(args)
                 guides_df, summary_df = designer.design_guides()
 
+                # Add this before the guide creation loop
+                logger.info(f"Available columns in guides_df: {guides_df.columns.tolist()}")
+                logger.info(f"Sample guide IDs: {guides_df['guideId'].head().tolist()}")
+                logger.info(f"First row of data: {guides_df.iloc[0].to_dict()}")
+
                 # Convert results to JSON with the expected format
                 guides = []
                 for _, row in guides_df.iterrows():
+                    # Extract strand from guideId which contains strand information
+                    # CRISPOR guide IDs are in format: "{position}{strand}"
+                    # e.g., "10+" or "20-"
+                    guide_id = row['guideId']
+                    strand = guide_id[-1]  # Last character is the strand (+ or -)
+                    
                     guide = {
                         'sequence': row['targetSeq'],
                         'position': row['pos'],
                         'score': float(row['design_score']),
                         'gc_content': float((row['targetSeq'].count('G') + row['targetSeq'].count('C')) / len(row['targetSeq']) * 100),
                         'off_targets': int(row['mismatch_2'] + row['mismatch_3'] + row['mismatch_4']),
-                        'strand': '+' if row['strand'] == 1 else '-'
+                        'strand': strand
                     }
                     guides.append(guide)
 
