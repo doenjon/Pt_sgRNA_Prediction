@@ -297,7 +297,7 @@ function createSequenceMap(sequence, guides) {
     const charWidth = 100 / seqLength;  // Width percentage for each character
     console.log('Character width:', charWidth);  // Debug log
     sequenceText.innerHTML = sequence.split('').map((char, i) => 
-        `<span style="position: absolute; left: ${charWidth * i}%; transform: translateX(-50%)">${char}</span>`
+        `<span style="position: absolute; left: calc(${charWidth * i}% + ${charWidth/2}%)">${char}</span>`
     ).join('');
 }
 
