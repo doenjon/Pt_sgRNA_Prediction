@@ -252,7 +252,7 @@ code {
 
 .ruler-marks {
     position: absolute;
-    top: 0;
+    top: 20px;
     left: 0;
     right: 0;
     height: 8px;
@@ -260,7 +260,7 @@ code {
 
 .ruler-numbers {
     position: absolute;
-    top: 10px;
+    top: 0px;
     left: 0;
     right: 0;
     height: 12px;
