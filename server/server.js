@@ -96,7 +96,7 @@ app.get('/api/results/:resultId', async (req, res) => {
             guides: job.result_data.guides.map(guide => ({
                 sequence: guide.sequence,
                 position: guide.position,
-                score: Number(guide.sgRNA_Scorer).toFixed(2),
+                score: Number(guide.sgRNA_Scorer),
                 gcContent: guide.gc_content,
                 offTargets: guide.off_targets,
                 strand: guide.guideId?.includes('forw') ? '+' : '-'  // Determine strand from forw/rev
