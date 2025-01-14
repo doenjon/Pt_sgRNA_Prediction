@@ -215,13 +215,20 @@ class GuideDesigner:
         crispor_path = os.path.join(os.path.dirname(__file__), "crisporWebsite", "crispor.py")
         resources_dir = os.path.join(os.path.dirname(__file__), "resources")
 
+        logging.info(f"CRISPOR path: {crispor_path}")
+        logging.info(f"Resources dir: {resources_dir}")
+        logging.info(f"Input sequence file: {seq_fn}")
+        logging.info(f"Output file: {outfile_crispor}")
+
         # Don't rerun expensive command if not necessary
         if not os.path.exists(outfile_crispor):
             cmd = f"python {crispor_path} --noEffScores --genomeDir {resources_dir} --offtargets {outfile_offtarget} ens79PhaTri {seq_fn} {outfile_crispor}"
+            logging.info(f"Running command: {cmd}")
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
             if result.returncode != 0:
                 logging.error(f"CRISPOR failed with error: {result.stderr}")
+                logging.error(f"CRISPOR stdout: {result.stdout}")
                 raise RuntimeError(f"CRISPOR command failed: {cmd}")
             
             if not os.path.exists(outfile_crispor):
