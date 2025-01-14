@@ -2,12 +2,9 @@ version: '3'
 services:
   guide_design:
     volumes:
-      - ../pt_guide_design:/app/packages/pt_guide_design
-      - ../sgrna_scorer:/app/packages/sgrna_scorer
-      - ./services/guide_design:/app/service
-    environment:
-      - PYTHONPATH=/app/packages:/app/service
-    command: python -u /app/service/service.py
+      - ./services/guide_design:/app/service:ro
+      - ../pt_guide_design:/app/packages/pt_guide_design:ro
+    command: python -m watchdog.watchmedo auto-restart -d /app/service -p "*.py" -- python service.py
 
   app:
     volumes:

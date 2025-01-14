@@ -10,4 +10,5 @@ scikit-learn==1.0.2
 tensorflow==2.10.1
 matplotlib==3.5.3
 twobitreader==3.1.7
-pytabix==0.1 
+pytabix==0.1
+watchdog==2.1.9 
