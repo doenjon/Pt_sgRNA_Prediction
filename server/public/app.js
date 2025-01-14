@@ -148,11 +148,12 @@ function displayResults(data) {
 
     // Display guide sequences
     data.guides.forEach((guide, index) => {
+        console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
         html += `
             <div class="guide-result" id="guide-${index + 1}">
                 <div class="d-flex justify-content-between align-items-start">
                     <h5>Guide ${index + 1}</h5>
-                    <span class="score-badge">Score: ${Number(guide.score).toFixed(2)}</span>
+                    <span class="score-badge">Score: ${(guide.score != null ? Number(guide.score).toFixed(2) : 'N/A')}</span>
                 </div>
                 <div class="sequence-display">
                     <code>${guide.sequence}</code>
