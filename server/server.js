@@ -123,3 +123,32 @@ app.get('/api/results/:resultId', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+app.get('/api/download/:resultId', async (req, res) => {
+    try {
+        const { resultId } = req.params;
+        
+        const query = `
+            SELECT result_data
+            FROM jobs 
+            WHERE id = $1 AND status = 'completed'
+        `;
+        
+        const result = await pool.query(query, [resultId]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Results not found' });
+        }
+
+        // Set headers for file download
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename=guide_results_${resultId}.json`);
+
+        // Send the raw result data
+        res.json(result.rows[0].result_data);
+
+    } catch (error) {
+        console.error('Error downloading results:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
