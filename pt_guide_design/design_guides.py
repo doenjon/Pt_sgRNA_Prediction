@@ -226,6 +226,8 @@ class GuideDesigner:
             logging.info(f"Running command: {cmd}")
             result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
             
+            logging.error(f"CRISPOR stdout: {result.stdout}")
+
             if result.returncode != 0:
                 logging.error(f"CRISPOR failed with error: {result.stderr}")
                 logging.error(f"CRISPOR stdout: {result.stdout}")
