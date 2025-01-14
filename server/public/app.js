@@ -141,18 +141,6 @@ function displayResults(data) {
     const resultsContent = document.getElementById('resultsContent');
     let html = '';
 
-    // Display input sequence
-    html += `
-        <div class="guide-card mb-4">
-            <div class="guide-sequence">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="mb-0">Input Sequence</h5>
-                </div>
-                <code>${data.inputSequence}</code>
-            </div>
-        </div>
-    `;
-
     // Display guide sequences
     data.guides.forEach((guide, index) => {
         console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
@@ -300,6 +288,17 @@ function createSequenceMap(sequence, guides) {
         });
 
         guideMarkers.appendChild(marker);
+    });
+
+    // Add sequence text above the line
+    const sequenceText = document.getElementById('sequenceText');
+    sequenceText.textContent = sequence;
+
+    // Add mousemove handler to position tooltip
+    mainSequence.addEventListener('mousemove', (e) => {
+        const rect = mainSequence.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        tooltip.style.left = `${x}px`;
     });
 }
 
