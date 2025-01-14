@@ -185,7 +185,11 @@ function displayResults(data) {
 
 function createSequenceMap(sequence, guides) {
     const seqLength = sequence.length;
-    console.log(`Sequence length: ${seqLength}bp`);
+    // Update the sequence length display
+    const seqLengthElement = document.getElementById('seqLength');
+    if (seqLengthElement) {
+        seqLengthElement.textContent = seqLength;
+    }
 
     // Create a scale function to convert bp positions to percentages
     function bpToPercent(bp) {
