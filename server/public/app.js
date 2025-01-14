@@ -207,7 +207,9 @@ function createSequenceMap(sequence, guides) {
     // Create tick marks every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
         const tick = document.createElement('span');
+        tick.style.position = 'absolute';  // Make sure ticks are absolutely positioned
         tick.style.left = `${bpToPercent(i)}%`;
+        tick.style.transform = 'translateX(-50%)';  // Center the tick mark
         tick.textContent = i;
         rulerNumbers.appendChild(tick);
     }
@@ -215,6 +217,9 @@ function createSequenceMap(sequence, guides) {
     // Create guide markers
     const guideMarkers = document.getElementById('guideMarkers');
     guideMarkers.innerHTML = '';
+    
+    // Track used vertical positions
+    const usedPositions = new Set();
     
     guides.forEach((guide, index) => {
         const marker = document.createElement('div');
@@ -224,17 +229,15 @@ function createSequenceMap(sequence, guides) {
 
         // Calculate exact guide position
         const GUIDE_LENGTH = 23;  // bp
-        const PAM_LENGTH = 3;     // bp
         let guideStart;          // leftmost bp position
 
         if (guide.strand === '+') {
-            // For + strand, position marks cut site which is 3bp from right
-            // So: position = guideStart + 20 (because cut site is -3 from end)
+            // For + strand, cut site is 3bp from right
+            // So: position = guideStart + 20
             guideStart = guide.position - 20;
         } else {
-            // For - strand, position marks cut site which is 3bp from left
-            // So: position = guideStart + 3
-            guideStart = guide.position - 3;
+            // For - strand, position should be at the left edge
+            guideStart = guide.position;
         }
 
         // Convert bp positions to percentages
