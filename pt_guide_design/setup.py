@@ -16,7 +16,8 @@ setup(
         "tqdm==4.65.0",
         "pyfaidx==0.7.1",
         "scikit-learn==1.0.2",
-        "redis==3.5.3"
+        "redis==3.5.3",
+        "matplotlib==3.5.3"
     ],
     author="Jon Doenier",
     author_email="Doenierjon@gmail.com",
