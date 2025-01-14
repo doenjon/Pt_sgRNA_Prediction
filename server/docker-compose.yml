@@ -33,10 +33,9 @@ services:
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro
-      - ./resources:/app/resources:ro
     environment:
       - PYTHONPATH=/app/packages:${PYTHONPATH}
-      - GENOME_PATH=/app/resources/genome.fa
+      - GENOME_PATH=/app/packages/pt_guide_design/resources/Phaeodactylum_tricornutum.ASM15095v2.dna.toplevel.fa
     depends_on:
       redis:
         condition: service_started
