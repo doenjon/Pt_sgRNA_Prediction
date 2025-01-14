@@ -312,6 +312,7 @@ code {
     border: 1px solid #e9ecef;
     display: none;
     white-space: nowrap;
+    z-index: 100;
 }
 
 .guide-marker[data-strand="+"]::after {
@@ -341,17 +342,6 @@ code {
 .guide-marker:hover {
     opacity: 1;
     z-index: 10;
-}
-
-/* Add a connecting line between marker and guide result */
-.guide-marker.active::before {
-    content: '';
-    position: absolute;
-    top: 12px;
-    left: 50%;
-    width: 1px;
-    height: 20px;
-    background: #dee2e6;
 }
 
 .loading-container {
