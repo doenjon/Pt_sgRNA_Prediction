@@ -446,13 +446,13 @@ code {
 
 .sequence-text {
     position: absolute;
-    top: -25px;  /* Position above the main sequence line */
+    top: 35px;  /* Move below the tick marks */
     left: 0;
     right: 0;
     font-family: monospace;
     font-size: 12px;
     color: #6c757d;
-    white-space: pre;  /* Preserve spacing */
+    white-space: pre;
     overflow: hidden;
-    letter-spacing: 1.67px;  /* Adjust this to match tick spacing */
+    letter-spacing: 0;  /* We'll handle spacing in JavaScript */
 }

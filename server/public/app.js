@@ -206,8 +206,8 @@ function createSequenceMap(sequence, guides) {
         rulerNumbers.appendChild(number);
     }
 
-    // Create tick marks every 2bp
-    for (let i = 0; i <= seqLength; i += 2) {
+    // Create tick marks every 5bp
+    for (let i = 0; i <= seqLength; i += 5) {
         // Create tick mark
         const tick = document.createElement('div');
         tick.className = 'ruler-tick';
@@ -292,7 +292,11 @@ function createSequenceMap(sequence, guides) {
 
     // Add sequence text above the line
     const sequenceText = document.getElementById('sequenceText');
-    sequenceText.textContent = sequence;
+    // Create evenly spaced characters
+    const charWidth = 100 / seqLength;  // Width percentage for each character
+    sequenceText.innerHTML = sequence.split('').map((char, i) => 
+        `<span style="position: absolute; left: ${charWidth * i}%; transform: translateX(-50%)">${char}</span>`
+    ).join('');
 
     // Add mousemove handler to position tooltip
     mainSequence.addEventListener('mousemove', (e) => {
