@@ -284,6 +284,7 @@ code {
 .guide-markers {
     position: relative;
     height: 100px;
+    margin-top: 20px;
 }
 
 .guide-marker {
@@ -309,6 +310,7 @@ code {
     padding: 0 4px;
     border-radius: 10px;
     border: 1px solid #e9ecef;
+    display: none;
 }
 
 .guide-marker[data-strand="+"]::after {
@@ -456,7 +458,7 @@ code {
 
 .sequence-text {
     position: absolute;
-    top: 35px;
+    top: 8px;
     left: 0;
     right: 0;
     font-family: monospace;
@@ -467,4 +469,8 @@ code {
     height: 20px;
     min-height: 20px;
     z-index: 1;
+}
+
+.guide-marker:hover::before {
+    display: block;
 }
