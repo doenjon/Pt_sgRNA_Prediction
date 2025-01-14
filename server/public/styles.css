@@ -256,13 +256,6 @@ code {
     left: 0;
     right: 0;
     height: 8px;
-    background: repeating-linear-gradient(
-        to right,
-        #dee2e6,
-        #dee2e6 1px,
-        transparent 1px,
-        transparent 20px
-    );
 }
 
 .ruler-numbers {
@@ -374,4 +367,12 @@ code {
 .loading-container .spinner-border {
     width: 3rem;
     height: 3rem;
+}
+
+/* Add individual tick marks instead of using gradient */
+.ruler-tick {
+    position: absolute;
+    width: 1px;
+    height: 8px;
+    background-color: #dee2e6;
 }
