@@ -1,0 +1,16 @@
+version: '3'
+services:
+  guide_design:
+    volumes:
+      - ../pt_guide_design:/app/packages/pt_guide_design
+      - ../sgrna_scorer:/app/packages/sgrna_scorer
+      - ./server/services/guide_design:/app/service
+    environment:
+      - PYTHONPATH=/app/packages:/app/service
+    command: python -u /app/service/service.py
+
+  app:
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: npm run dev 
