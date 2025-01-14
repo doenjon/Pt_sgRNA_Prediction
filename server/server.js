@@ -9,7 +9,11 @@ const { pool, initializeDatabase } = require('./config');
 const app = express();
 const port = 3000;
 
-app.use(cors());
+app.use(cors({
+    origin: '*',  // Be more specific in production
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
+}));
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
@@ -26,9 +30,11 @@ initializeDatabase()
     });
 
 app.post('/api/generate', async (req, res) => {
+    console.log('Received request to /api/generate');
+    console.log('Request headers:', req.headers);
     console.log('Received request to /api/generate with body:', req.body);
 
-    const resultId = uuidv4(); // Unique ID for the result
+    const resultId = uuidv4();
     console.log(`Generated resultId: ${resultId}`);
 
     const { sequence } = req.body;
@@ -41,8 +47,9 @@ app.post('/api/generate', async (req, res) => {
         const job = await guideGenerationQueue.add({ sequence, resultId });
         console.log(`Job submitted from queue with ID: ${job.id} for resultId: ${resultId}`);
 
-        res.json({ resultId }); // Send the resultId back to the client
+        res.json({ resultId });
     } catch (error) {
+        console.error('Error in /api/generate:', error);
         console.error('Error adding job to queue:', error);
         res.status(500).send('Failed to queue the guide generation');
     }

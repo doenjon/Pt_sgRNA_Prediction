@@ -1,3 +1,5 @@
+const API_BASE_URL = window.location.port ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}` : `${window.location.protocol}//${window.location.hostname}`;
+
 document.getElementById('guideForm')?.addEventListener('submit', function(event) {
     event.preventDefault();
     
@@ -14,7 +16,7 @@ document.getElementById('guideForm')?.addEventListener('submit', function(event)
     submitButton.disabled = true;
     spinner.classList.remove('d-none');
 
-    fetch('/api/generate', {
+    fetch(`${API_BASE_URL}/api/generate`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -22,7 +24,9 @@ document.getElementById('guideForm')?.addEventListener('submit', function(event)
         body: JSON.stringify({ sequence }),
     })
     .then(response => {
+        console.log('Response status:', response.status);
         if (!response.ok) {
+            console.error('Response not ok:', response.statusText);
             throw new Error('Network response was not ok');
         }
         return response.json();
@@ -33,6 +37,7 @@ document.getElementById('guideForm')?.addEventListener('submit', function(event)
     })
     .catch((error) => {
         console.error('Error:', error);
+        console.error('Error details:', error.message);
         const errorDiv = document.createElement('div');
         errorDiv.className = 'alert alert-danger error-message';
         errorDiv.textContent = 'An error occurred. Please try again later.';
@@ -65,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchResults(resultId) {
-    fetch(`/api/results/${resultId}`)
+    fetch(`${API_BASE_URL}/api/results/${resultId}`)
         .then(response => {
             console.log('API Response:', response.status);
             if (!response.ok) {
