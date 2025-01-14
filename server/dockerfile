@@ -7,10 +7,14 @@ ARG BUILDPLATFORM
 
 WORKDIR /app
 
+# Install nodemon globally
+RUN npm install -g nodemon
+
 COPY package.json package-lock.json ./
 
+# Install both production and development dependencies
 RUN npm install
 
 COPY . .
 
-CMD [ "node", "server.js" ]
+CMD [ "npm", "start" ]
