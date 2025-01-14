@@ -293,6 +293,7 @@ code {
     opacity: 0.8;
     transition: all 0.2s ease;
     cursor: pointer;
+    user-select: none;
 }
 
 .guide-marker::before {
@@ -375,4 +376,47 @@ code {
     width: 1px;
     height: 8px;
     background-color: #dee2e6;
+}
+
+.guide-card {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.guide-sequence {
+    background: white;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    font-family: monospace;
+}
+
+.guide-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    padding: 0.75rem;
+    font-size: 0.875rem;
+}
+
+.detail-item {
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.guide-result {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.score-badge {
+    background: #e9ecef;
+    color: #2c3e50;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 500;
 }

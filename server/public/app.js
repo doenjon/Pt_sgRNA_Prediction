@@ -153,37 +153,27 @@ function displayResults(data) {
         console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
         html += `
             <div class="guide-result" id="guide-${index + 1}">
-                <div class="d-flex justify-content-between align-items-start">
-                    <h5>Guide ${index + 1}</h5>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Guide ${index + 1}</h5>
                     <span class="score-badge">Score: ${(guide.score != null ? Number(guide.score).toFixed(2) : 'N/A')}</span>
                 </div>
-                <div class="sequence-display">
-                    <code>${guide.sequence}</code>
-                    <small class="text-muted ms-2">
-                        <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'} me-1"></i>
-                        ${guide.strand} strand
-                    </small>
-                </div>
-                <div class="row mt-3">
-                    <div class="col-md-3">
-                        <small class="text-muted">
-                            <i class="fas fa-map-marker-alt me-2"></i>Position: ${guide.position}
-                        </small>
+                <div class="guide-card">
+                    <div class="guide-sequence">
+                        <code>${guide.sequence}</code>
                     </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">
-                            <i class="fas fa-percentage me-2"></i>GC Content: ${guide.gcContent}%
-                        </small>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">
-                            <i class="fas fa-exclamation-triangle me-2"></i>Off-targets: ${guide.offTargets}
-                        </small>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">
-                            <i class="fas fa-dna me-2"></i>Strand: ${guide.strand}
-                        </small>
+                    <div class="guide-details">
+                        <span class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i> ${guide.position}
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-percentage"></i> ${Math.round(guide.gcContent)}% GC
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-exclamation-triangle"></i> ${guide.offTargets} off-target${guide.offTargets !== 1 ? 's' : ''}
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'}"></i> ${guide.strand} strand
+                        </span>
                     </div>
                 </div>
             </div>
@@ -287,6 +277,17 @@ function createSequenceMap(sequence, guides) {
         marker.addEventListener('mouseleave', () => {
             const guideElement = document.querySelector(`#guide-${index + 1}`);
             if (guideElement) guideElement.classList.remove('highlight');
+        });
+        
+        // Add click handler for scrolling
+        marker.addEventListener('click', () => {
+            const guideElement = document.querySelector(`#guide-${index + 1}`);
+            if (guideElement) {
+                guideElement.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
         });
 
         guideMarkers.appendChild(marker);
