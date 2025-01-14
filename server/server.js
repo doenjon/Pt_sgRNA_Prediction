@@ -80,6 +80,7 @@ app.get('/api/results/:resultId', async (req, res) => {
         }
 
         const job = result.rows[0];
+        console.log('Raw guide data from database:', job.result_data.guides[0]);  // Log first guide data
 
         // Check if job is still processing
         if (job.status !== 'completed') {
@@ -96,10 +97,10 @@ app.get('/api/results/:resultId', async (req, res) => {
             guides: job.result_data.guides.map(guide => ({
                 sequence: guide.sequence,
                 position: guide.position,
-                score: Number(guide.sgRNA_Scorer),
+                score: Number(guide.sgRNA_Scorer || guide.score),
                 gcContent: guide.gc_content,
                 offTargets: guide.off_targets,
-                strand: guide.guideId?.includes('forw') ? '+' : '-'  // Determine strand from forw/rev
+                strand: guide.guideId?.includes('forw') ? '+' : '-'
             })),
             createdAt: job.created_at
         };
