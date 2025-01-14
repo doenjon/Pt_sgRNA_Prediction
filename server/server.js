@@ -16,8 +16,8 @@ app.use(express.static('public'));
 // Initialize database before starting the server
 initializeDatabase()
     .then(() => {
-        app.listen(port, () => {
-            console.log(`Server running at http://localhost:${port}`);
+        app.listen(port, '0.0.0.0', () => {
+            console.log('Server running at http://0.0.0.0:3000');
         });
     })
     .catch(error => {
