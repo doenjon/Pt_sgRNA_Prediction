@@ -38,7 +38,7 @@ transporter.verify((error, success) => {
 });
 
 async function sendResultsEmail(email, resultId) {
-    const resultsUrl = `${process.env.BASE_URL || 'http://localhost'}/results.html?resultId=${resultId}`;
+    const resultsUrl = `${process.env.BASE_URL}/results.html?resultId=${resultId}`;
     
     try {
         // Log the email configuration before sending
@@ -49,10 +49,10 @@ async function sendResultsEmail(email, resultId) {
         });
 
         await transporter.sendMail({
-            from: process.env.SES_FROM,  // Remove the fallback
+            from: process.env.SES_FROM,
             to: email,
             subject: 'Your CRISPR Guide Results Are Ready',
-            text: `Your guide design results are ready! View them at: ${resultsUrl}`,
+            text: `Your CRISPR guide design results are ready! View them at: ${resultsUrl}`,
             html: `
                 <h2>Your CRISPR Guide Results Are Ready</h2>
                 <p>Your guide design job has completed. Click the link below to view your results:</p>
