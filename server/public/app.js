@@ -97,21 +97,15 @@ function fetchResults(resultId) {
     console.log('Starting to poll for results:', resultId);
 
     function pollResults() {
-        console.log('Polling for results:', resultId);
-        
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
-                console.log('Poll response status:', response.status);
                 if (!response.ok) {
                     throw new Error(response.status === 404 ? 'Results not found' : 'Server error');
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Poll response data:', data);
-                
                 if (data.status === 'processing') {
-                    console.log('Job still processing, will poll again in 2s');
                     // Still processing, continue polling
                     setTimeout(pollResults, 2000);
                     
@@ -197,12 +191,28 @@ function displayResults(data) {
 }
 
 function createSequenceMap(sequence, guides) {
-    const seqLength = sequence.length;
-    // Update the sequence length display
+    // First check if the required elements exist
+    const rulerNumbers = document.getElementById('rulerNumbers');
+    const rulerMarks = document.getElementById('rulerMarks');
+    const guideMarkers = document.getElementById('guideMarkers');
     const seqLengthElement = document.getElementById('seqLength');
+
+    if (!rulerNumbers || !rulerMarks || !guideMarkers) {
+        console.error('Required sequence map elements not found');
+        return;
+    }
+
+    const seqLength = sequence.length;
+    
+    // Update the sequence length display if element exists
     if (seqLengthElement) {
         seqLengthElement.textContent = seqLength;
     }
+
+    // Clear existing content
+    rulerNumbers.innerHTML = '';
+    rulerMarks.innerHTML = '';
+    guideMarkers.innerHTML = '';
 
     // Create a scale function to convert bp positions to percentages
     function bpToPercent(bp) {
@@ -210,12 +220,6 @@ function createSequenceMap(sequence, guides) {
     }
 
     // Create ruler with precise bp positions
-    const rulerNumbers = document.getElementById('rulerNumbers');
-    const rulerMarks = document.getElementById('rulerMarks');
-    rulerNumbers.innerHTML = '';
-    rulerMarks.innerHTML = '';
-    
-    // Create numbers every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
         // Create number
         const number = document.createElement('span');
@@ -236,10 +240,6 @@ function createSequenceMap(sequence, guides) {
     }
 
     // Create guide markers
-    const guideMarkers = document.getElementById('guideMarkers');
-    guideMarkers.innerHTML = '';
-    
-    // Track used vertical positions
     const usedPositions = new Set();
     
     guides.forEach((guide, index) => {
