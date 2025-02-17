@@ -22,10 +22,10 @@ guideGenerationQueue.process(async (job) => {
     try {
         console.log(`Starting job processing for ${resultId}`);
         
-        // Store the job in the database
+        // Update the job status instead of inserting
         await pool.query(
-            'INSERT INTO jobs (id, input_sequence, status) VALUES ($1, $2, $3)',
-            [resultId, sequence, 'processing']
+            'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            ['processing', resultId]
         );
 
         // Send job to Redis queue for Python service
