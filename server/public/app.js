@@ -93,8 +93,8 @@ function fetchResults(resultId) {
     function pollResults() {
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
-                if (response.status === 500) {
-                    throw new Error('Server error');
+                if (!response.ok) {
+                    throw new Error(response.status === 404 ? 'Results not found' : 'Server error');
                 }
                 return response.json();
             })
@@ -105,7 +105,7 @@ function fetchResults(resultId) {
                     // Still processing, continue polling
                     setTimeout(pollResults, 2000);
                     
-                    // Show loading state
+                    // Show loading state with appropriate message
                     loadingState.style.display = 'block';
                     resultsContent.style.display = 'none';
                     errorState.style.display = 'none';
@@ -127,7 +127,6 @@ function fetchResults(resultId) {
                     createSequenceMap(data.inputSequence, data.guides);
                     downloadBtn.disabled = false;
                 } else {
-                    // Handle error state
                     throw new Error(data.error || 'Failed to process results');
                 }
             })
@@ -136,8 +135,6 @@ function fetchResults(resultId) {
                 loadingState.style.display = 'none';
                 resultsContent.style.display = 'none';
                 errorState.style.display = 'block';
-                document.getElementById('errorMessage').textContent = 
-                    error.message || 'Failed to load results. Please try again.';
             });
     }
 

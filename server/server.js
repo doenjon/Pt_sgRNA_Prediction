@@ -76,19 +76,44 @@ app.post('/api/generate', async (req, res) => {
 app.get('/api/results/:resultId', async (req, res) => {
     try {
         const { resultId } = req.params;
-        console.log('Fetching results for:', resultId); // Add debug log
+        console.log('Fetching results for:', resultId);
 
-        const result = await pool.query(
-            'SELECT * FROM results WHERE id = $1',
-            [resultId]
-        );
+        // First check jobs table for status
+        const jobQuery = `
+            SELECT status, email, result_data 
+            FROM jobs 
+            WHERE id = $1
+        `;
+        const jobResult = await pool.query(jobQuery, [resultId]);
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Results not found' });
+        if (jobResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Job not found' });
         }
 
-        console.log('Found results:', result.rows[0]); // Add debug log
-        res.json(result.rows[0]);
+        const job = jobResult.rows[0];
+
+        // If job is still processing, return appropriate status
+        if (job.status === 'pending' || job.status === 'processing') {
+            return res.json({
+                status: 'processing',
+                email: job.email
+            });
+        }
+
+        // If job is completed, return the results
+        if (job.status === 'completed' && job.result_data) {
+            return res.json({
+                status: 'completed',
+                ...job.result_data
+            });
+        }
+
+        // Handle error state
+        return res.status(500).json({ 
+            status: 'error',
+            error: 'Job failed or invalid state' 
+        });
+
     } catch (error) {
         console.error('Error fetching results:', error);
         res.status(500).json({ error: 'Failed to fetch results' });
