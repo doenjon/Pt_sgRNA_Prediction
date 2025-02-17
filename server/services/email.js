@@ -41,8 +41,15 @@ async function sendResultsEmail(email, resultId) {
     const resultsUrl = `${process.env.BASE_URL || 'http://localhost'}/results.html?resultId=${resultId}`;
     
     try {
+        // Log the email configuration before sending
+        console.log('Sending email with config:', {
+            from: process.env.SES_FROM,
+            to: email,
+            url: resultsUrl
+        });
+
         await transporter.sendMail({
-            from: process.env.SES_FROM || 'guidedesign@ptcrispr.org',
+            from: process.env.SES_FROM,  // Remove the fallback
             to: email,
             subject: 'Your CRISPR Guide Results Are Ready',
             text: `Your guide design results are ready! View them at: ${resultsUrl}`,
