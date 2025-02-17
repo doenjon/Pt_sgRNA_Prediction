@@ -31,26 +31,36 @@ initializeDatabase()
 
 app.post('/api/generate', async (req, res) => {
     console.log('Received request to /api/generate');
-    console.log('Request headers:', req.headers);
-    console.log('Received request to /api/generate with body:', req.body);
-
+    
     const resultId = uuidv4();
-    console.log(`Generated resultId: ${resultId}`);
-
-    const { sequence } = req.body;
+    const { sequence, email } = req.body;
+    
     if (!sequence) {
         console.error('Sequence is missing in the request body');
         return res.status(400).send('Sequence is required');
     }
 
-    try {
-        const job = await guideGenerationQueue.add({ sequence, resultId });
-        console.log(`Job submitted from queue with ID: ${job.id} for resultId: ${resultId}`);
+    // Clean sequence
+    const cleanSequence = sequence.replace(/[^ACTGactg]/g, '').toUpperCase();
 
+    try {
+        // Store email with job if provided
+        const query = `
+            INSERT INTO jobs (id, input_sequence, email, status)
+            VALUES ($1, $2, $3, 'pending')
+        `;
+        await pool.query(query, [resultId, cleanSequence, email || null]);
+
+        const job = await guideGenerationQueue.add({ 
+            sequence: cleanSequence, 
+            resultId,
+            email 
+        });
+        
+        console.log(`Job submitted from queue with ID: ${job.id} for resultId: ${resultId}`);
         res.json({ resultId });
     } catch (error) {
         console.error('Error in /api/generate:', error);
-        console.error('Error adding job to queue:', error);
         res.status(500).send('Failed to queue the guide generation');
     }
 });
@@ -105,10 +115,18 @@ app.get('/api/results/:resultId', async (req, res) => {
             inputSequence: job.input_sequence,
             guides: job.result_data.guides.map(guide => {
                 console.log('Processing guide:', guide);  // Log each guide as we process it
+                
+                // Normalize score from [-2,2] to [0,100]
+                let normalizedScore = guide.sgRNA_Scorer || guide.score;
+                // Clamp score to [-2,2] range
+                normalizedScore = Math.max(-2, Math.min(2, normalizedScore));
+                // Convert to 0-100 range
+                normalizedScore = ((normalizedScore + 2) / 4) * 100;
+                
                 return {
                     sequence: guide.sequence,
                     position: guide.position,
-                    score: Number(guide.sgRNA_Scorer || guide.score),
+                    score: Math.round(normalizedScore), // Round to nearest integer
                     gcContent: guide.gc_content,
                     offTargets: guide.off_targets,
                     strand: guide.strand

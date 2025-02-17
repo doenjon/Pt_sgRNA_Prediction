@@ -6,7 +6,20 @@ document.getElementById('guideForm')?.addEventListener('submit', function(event)
     const form = event.target;
     const submitButton = form.querySelector('button[type="submit"]');
     const spinner = submitButton.querySelector('.spinner-border');
-    const sequence = document.getElementById('sequence').value;
+    let sequence = document.getElementById('sequence').value;
+    const email = document.getElementById('email')?.value;
+
+    // Validate and clean sequence
+    sequence = sequence.replace(/[^ACTGactg]/g, '').toUpperCase();
+    document.getElementById('sequence').value = sequence;
+
+    if (sequence.length === 0) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger error-message';
+        errorDiv.textContent = 'Please enter a valid DNA sequence using only A, C, T, G nucleotides.';
+        form.appendChild(errorDiv);
+        return;
+    }
 
     // Clear previous error messages
     const existingError = form.querySelector('.error-message');
@@ -21,7 +34,7 @@ document.getElementById('guideForm')?.addEventListener('submit', function(event)
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ sequence }),
+        body: JSON.stringify({ sequence, email }),
     })
     .then(response => {
         console.log('Response status:', response.status);
@@ -227,6 +240,11 @@ function createSequenceMap(sequence, guides) {
         marker.className = 'guide-marker';
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
+
+        // Calculate color based on score (now in range 0-100)
+        const normalizedScore = guide.score / 100; // Convert to 0-1 range
+        const opacity = 0.3 + (normalizedScore * 0.7); // Maps [0,1] to opacity [0.3,1.0]
+        marker.style.backgroundColor = `rgba(58, 74, 92, ${opacity})`;
 
         // Calculate exact guide position
         const GUIDE_LENGTH = 23;  // bp

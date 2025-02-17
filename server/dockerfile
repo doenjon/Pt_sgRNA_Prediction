@@ -1,9 +1,5 @@
-# Use a multi-platform base image
-FROM --platform=$TARGETPLATFORM node:16.20.2
-
-# Set build arguments and environment variables
-ARG TARGETPLATFORM
-ARG BUILDPLATFORM
+# Use a specific platform if needed
+FROM node:16.20.2
 
 WORKDIR /app
 
@@ -12,7 +8,7 @@ RUN npm install -g nodemon
 
 COPY package.json package-lock.json ./
 
-# Install both production and development dependencies
+# Install dependencies
 RUN npm install
 
 COPY . .

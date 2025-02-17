@@ -290,9 +290,8 @@ code {
 .guide-marker {
     position: absolute;
     height: 12px;
-    background: #3a4a5c;
+    background: rgba(58, 74, 92, 0.8);
     border-radius: 2px;
-    opacity: 0.8;
     transition: all 0.2s ease;
     cursor: pointer;
     user-select: none;
