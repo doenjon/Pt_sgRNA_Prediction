@@ -77,13 +77,14 @@ app.get('/api/results/:resultId', async (req, res) => {
     try {
         const { resultId } = req.params;
         
-        // Query to get the job results
+        // Update query to include email
         const query = `
             SELECT 
                 jobs.input_sequence,
                 jobs.result_data,
                 jobs.status,
-                jobs.created_at
+                jobs.created_at,
+                jobs.email
             FROM jobs 
             WHERE jobs.id = $1
         `;
@@ -119,7 +120,8 @@ app.get('/api/results/:resultId', async (req, res) => {
 
         // Format the response for completed jobs
         const response = {
-            status: 'completed',
+            status: job.status,
+            email: job.email,
             inputSequence: job.input_sequence,
             guides: job.result_data.guides.map(guide => {
                 console.log('Processing guide:', guide);  // Log each guide as we process it

@@ -87,6 +87,8 @@ function fetchResults(resultId) {
     const resultsContent = document.getElementById('resultsContent');
     const errorState = document.getElementById('errorState');
     const downloadBtn = document.getElementById('downloadBtn');
+    const emailNotification = document.getElementById('emailNotification');
+    const waitingNotification = document.getElementById('waitingNotification');
 
     function pollResults() {
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
@@ -101,7 +103,15 @@ function fetchResults(resultId) {
                     // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
                     
-                    // Ensure loading state is visible and map is hidden
+                    // Show appropriate notification based on whether email was provided
+                    if (data.email) {
+                        emailNotification.style.display = 'block';
+                        waitingNotification.style.display = 'none';
+                    } else {
+                        emailNotification.style.display = 'none';
+                        waitingNotification.style.display = 'block';
+                    }
+                    
                     loadingState.style.display = 'block';
                     resultsContent.style.display = 'none';
                     errorState.style.display = 'none';

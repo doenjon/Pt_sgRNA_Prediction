@@ -2,6 +2,7 @@ const Queue = require('bull');
 const { pool } = require('./config');
 const { spawn } = require('child_process');
 const path = require('path');
+const { sendResultsEmail } = require('./services/email');
 
 const guideGenerationQueue = new Queue('guide-generation', {
     redis: {
@@ -17,7 +18,7 @@ pool.on('error', (err) => {
 
 // Add job processing logic
 guideGenerationQueue.process(async (job) => {
-    const { sequence, resultId } = job.data;
+    const { sequence, resultId, email } = job.data;
     
     try {
         console.log(`Starting job processing for ${resultId}`);
@@ -51,6 +52,16 @@ guideGenerationQueue.process(async (job) => {
             'UPDATE jobs SET status = $1, result_data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
             ['completed', results, resultId]
         );
+
+        // Send email if provided
+        if (email) {
+            try {
+                await sendResultsEmail(email, resultId);
+            } catch (emailError) {
+                console.error('Failed to send results email:', emailError);
+                // Continue processing even if email fails
+            }
+        }
 
         return { resultId, status: 'completed' };
 
