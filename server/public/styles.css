@@ -290,7 +290,6 @@ code {
 .guide-marker {
     position: absolute;
     height: 12px;
-    background: rgba(58, 74, 92, 0.8);
     border-radius: 2px;
     transition: all 0.2s ease;
     cursor: pointer;
@@ -315,13 +314,14 @@ code {
     z-index: 100;
 }
 
+/* Remove the existing arrow styles and add new ones */
 .guide-marker[data-strand="+"]::after {
     content: '';
     position: absolute;
     right: -6px;
     top: 0;
     bottom: 0;
-    border-left: 6px solid #3a4a5c;
+    border-left: 6px solid currentColor; /* Uses same color as parent */
     border-top: 6px solid transparent;
     border-bottom: 6px solid transparent;
     height: 12px;
@@ -333,7 +333,7 @@ code {
     left: -6px;
     top: 0;
     bottom: 0;
-    border-right: 6px solid #3a4a5c;
+    border-right: 6px solid currentColor; /* Uses same color as parent */
     border-top: 6px solid transparent;
     border-bottom: 6px solid transparent;
     height: 12px;

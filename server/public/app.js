@@ -253,8 +253,23 @@ function createSequenceMap(sequence, guides) {
 
         // Calculate color based on score (now in range 0-100)
         const normalizedScore = guide.score / 100; // Convert to 0-1 range
-        const opacity = 0.3 + (normalizedScore * 0.7); // Maps [0,1] to opacity [0.3,1.0]
-        marker.style.backgroundColor = `rgba(58, 74, 92, ${opacity})`;
+        
+        // Use a color gradient from red (poor) to yellow (medium) to green (good)
+        let color;
+        if (normalizedScore < 0.5) {
+            // Red to Yellow gradient for lower scores
+            const r = 255;
+            const g = Math.round(normalizedScore * 2 * 255);
+            color = `rgb(${r}, ${g}, 0)`;
+        } else {
+            // Yellow to Green gradient for higher scores
+            const r = Math.round((1 - (normalizedScore - 0.5) * 2) * 255);
+            const g = 255;
+            color = `rgb(${r}, ${g}, 0)`;
+        }
+        
+        marker.style.backgroundColor = color;
+        marker.style.color = color; // This sets the arrow color to match
 
         // Calculate exact guide position
         const GUIDE_LENGTH = 23;  // bp
