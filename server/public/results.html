@@ -21,17 +21,14 @@
         <!-- Loading State -->
         <div id="loadingState" class="text-center">
             <div class="error-container">
-                <div class="mb-4">
-                    <i class="fas fa-exclamation-circle text-danger" style="font-size: 3rem;"></i>
-                </div>
-                <h2 class="text-danger mb-3">Error Loading Results</h2>
-                <p class="text-muted mb-4">The string did not match the expected pattern.</p>
-                
-                <div class="d-flex justify-content-center mb-4">
-                    <a href="/" class="btn btn-primary">
-                        <i class="fas fa-arrow-left me-2"></i>Return Home
-                    </a>
-                </div>
+                <h2 class="mb-4">Job Submitted Successfully</h2>
+                <p class="text-muted mb-3">Your guide design job is being processed.</p>
+                <p class="text-muted mb-4" id="emailNotification" style="display: none">
+                    You will receive an email when your results are ready.
+                </p>
+                <p class="text-muted mb-4" id="waitingNotification">
+                    This page will automatically update when processing is complete.
+                </p>
             </div>
         </div>
 

@@ -99,11 +99,13 @@ function fetchResults(resultId) {
                 return response.json();
             })
             .then(data => {
-                console.log('Poll response:', data); // Add this debug log
+                console.log('Poll response:', data);
                 
                 if (data.status === 'processing') {
                     // Still processing, continue polling
                     setTimeout(pollResults, 2000);
+                    
+                    // Show loading state
                     loadingState.style.display = 'block';
                     resultsContent.style.display = 'none';
                     errorState.style.display = 'none';
