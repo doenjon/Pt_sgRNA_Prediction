@@ -152,42 +152,36 @@ function displayResults(data) {
     }
 
     console.log('Displaying results:', data);
-    const resultsContent = document.getElementById('resultsContent');
+    const guideResults = document.getElementById('guideResults');
     let html = '';
 
     // Display guide sequences
     data.guides.forEach((guide, index) => {
-        console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
+        const gcContent = calculateGCContent(guide.sequence);
         html += `
-            <div class="guide-result" id="guide-${index + 1}">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="mb-0">Guide ${index + 1}</h5>
-                    <span class="score-badge">Score: ${(guide.score != null ? Number(guide.score).toFixed(2) : 'N/A')}</span>
-                </div>
-                <div class="guide-card">
-                    <div class="guide-sequence">
-                        <code>${guide.sequence}</code>
-                    </div>
-                    <div class="guide-details">
-                        <span class="detail-item">
-                            <i class="fas fa-map-marker-alt"></i> ${guide.position}
-                        </span>
-                        <span class="detail-item">
-                            <i class="fas fa-percentage"></i> ${Math.round(guide.gcContent)}% GC
-                        </span>
-                        <span class="detail-item">
-                            <i class="fas fa-exclamation-triangle"></i> ${guide.offTargets} off-target${guide.offTargets !== 1 ? 's' : ''}
-                        </span>
-                        <span class="detail-item">
-                            <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'}"></i> ${guide.strand} strand
-                        </span>
+            <div id="guide-${index + 1}" class="guide-result mb-4 p-3 border rounded">
+                <h4>Guide ${index + 1}</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p class="mb-2">Score: ${guide.score.toFixed(2)}</p>
+                        <p class="mb-2">Sequence: ${guide.sequence}</p>
+                        <p class="mb-2">Position: ${guide.position}</p>
+                        <p class="mb-2">GC Content: ${(gcContent * 100).toFixed(1)}%</p>
+                        <p class="mb-2">Off-targets: ${guide.offTargets || 0}</p>
+                        <p class="mb-2">Strand: ${guide.strand}</p>
                     </div>
                 </div>
             </div>
         `;
     });
 
-    resultsContent.innerHTML = html;
+    guideResults.innerHTML = html;
+}
+
+// Helper function to calculate GC content
+function calculateGCContent(sequence) {
+    const gcCount = (sequence.match(/[GC]/g) || []).length;
+    return gcCount / sequence.length;
 }
 
 function createSequenceMap(sequence, guides) {
@@ -204,7 +198,7 @@ function createSequenceMap(sequence, guides) {
 
     const seqLength = sequence.length;
     
-    // Update the sequence length display if element exists
+    // Update the sequence length display
     if (seqLengthElement) {
         seqLengthElement.textContent = seqLength;
     }
