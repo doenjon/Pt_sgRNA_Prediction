@@ -201,9 +201,8 @@ code {
 
 /* Update these styles for the results page */
 .results-page {
+    background-color: white;
     min-height: 100vh;
-    padding-bottom: 100px; /* Space for fixed bottom section */
-    position: relative;
 }
 
 .results-page .navbar {
@@ -345,20 +344,23 @@ code {
     z-index: 10;
 }
 
-.error-container {
-    max-width: 600px;
-    margin: 100px auto 0;
-    padding: 2rem;
-    text-align: center;
-}
-
-.fixed-bottom {
-    box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-}
-
-/* Remove spinner-related styles */
 .loading-container {
-    display: none;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.error-container {
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.loading-container .spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 
 /* Add individual tick marks instead of using gradient */

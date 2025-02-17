@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3'
 services:
   guide_design:
     volumes:
@@ -9,12 +9,9 @@ services:
   app:
     env_file:
       - .env    # Add this if not present
-    build:
-      context: .
-      target: development
+    environment:
+      - NODE_ENV=development
     volumes:
-      - .:/app
+      - ./:/app
       - /app/node_modules
-    ports:
-      - "3000:3000"
     command: npm run dev 

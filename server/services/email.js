@@ -1,58 +1,38 @@
 const nodemailer = require('nodemailer');
 
-// Add debug log at the top of the file
-console.log('Loading email service with config:', {
-    host: process.env.SES_HOST,
-    port: process.env.SES_PORT,
-    user: process.env.SES_USER,
-    pass: process.env.SES_PASS ? '***' : 'not set'
-});
-
 // Create reusable transporter for Amazon SES
 const transporter = nodemailer.createTransport({
-    host: process.env.SES_HOST,
-    port: process.env.SES_PORT,
-    secure: false,
+    host: process.env.SES_HOST || 'email-smtp.us-east-1.amazonaws.com',
+    port: process.env.SES_PORT ? Number(process.env.SES_PORT) : 587,
+    secure: process.env.SES_PORT && process.env.SES_PORT === '465', // true if using port 465
     auth: {
         user: process.env.SES_USER,
         pass: process.env.SES_PASS
     },
-    debug: true,
-    logger: true  // Add this for more detailed logs
+    tls: {
+        rejectUnauthorized: false
+    },
+    debug: true // Enable debugging output to help diagnose issues
 });
 
-// Test the connection on startup
+// Test the connection
 transporter.verify((error, success) => {
     if (error) {
         console.log('SES connection failed:', error);
-        // Log the configuration (but mask the password)
-        console.log('SES Config:', {
-            host: process.env.SES_HOST,
-            port: process.env.SES_PORT,
-            user: process.env.SES_USER,
-            pass: process.env.SES_PASS ? '***' : 'not set'
-        });
     } else {
         console.log('SES is ready to send messages');
     }
 });
 
 async function sendResultsEmail(email, resultId) {
-    const resultsUrl = `${process.env.BASE_URL}/results.html?resultId=${resultId}`;
+    const resultsUrl = `${process.env.BASE_URL || 'http://localhost'}/results.html?resultId=${resultId}`;
     
     try {
-        // Log the email configuration before sending
-        console.log('Sending email with config:', {
-            from: process.env.SES_FROM,
-            to: email,
-            url: resultsUrl
-        });
-
         await transporter.sendMail({
-            from: process.env.SES_FROM,
+            from: process.env.SES_FROM || 'guidedesign@ptcrispr.org',
             to: email,
             subject: 'Your CRISPR Guide Results Are Ready',
-            text: `Your CRISPR guide design results are ready! View them at: ${resultsUrl}`,
+            text: `Your guide design results are ready! View them at: ${resultsUrl}`,
             html: `
                 <h2>Your CRISPR Guide Results Are Ready</h2>
                 <p>Your guide design job has completed. Click the link below to view your results:</p>

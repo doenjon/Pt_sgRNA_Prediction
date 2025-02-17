@@ -76,54 +76,79 @@ app.post('/api/generate', async (req, res) => {
 app.get('/api/results/:resultId', async (req, res) => {
     try {
         const { resultId } = req.params;
-        console.log('Fetching results for:', resultId);
-
-        // Query the jobs table
-        const jobQuery = `
-            SELECT id, status, email, result_data, input_sequence 
+        
+        // Update query to include email
+        const query = `
+            SELECT 
+                jobs.input_sequence,
+                jobs.result_data,
+                jobs.status,
+                jobs.created_at,
+                jobs.email
             FROM jobs 
-            WHERE id = $1
+            WHERE jobs.id = $1
         `;
         
-        const result = await pool.query(jobQuery, [resultId]);
-        console.log('Database result:', result.rows[0]); // This log shows the raw DB result
-
+        const result = await pool.query(query, [resultId]);
+        
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Job not found' });
-        }
-
-        const job = result.rows[0];
-
-        // If job is still processing, return appropriate status
-        if (job.status === 'pending' || job.status === 'processing') {
-            return res.json({
+            return res.status(202).json({ 
                 status: 'processing',
-                email: job.email
+                message: 'Job is being processed'
             });
         }
 
-        // If job is completed, return the full response
-        if (job.status === 'completed' && job.result_data) {
-            const response = {
-                status: 'completed',
-                inputSequence: job.input_sequence,
-                email: job.email,
-                guides: job.result_data.guides,
-                summary: job.result_data.summary
-            };
-            console.log('Sending completed response:', response); // Add this log
-            return res.json(response);
-        }
-
-        // Handle error state
-        return res.status(500).json({ 
-            status: 'error',
-            error: 'Job failed or invalid state' 
+        const job = result.rows[0];
+        console.log('Raw job data from database:', {
+            status: job.status,
+            result_data: job.result_data,
+            has_guides: job.result_data?.guides?.length > 0
         });
 
+        // Log the first guide's complete data
+        if (job.result_data?.guides?.length > 0) {
+            console.log('First guide complete data:', job.result_data.guides[0]);
+        }
+
+        // Check if job is still processing
+        if (job.status !== 'completed' || !job.result_data?.guides) {
+            return res.status(202).json({ 
+                status: job.status,
+                message: 'Results are still processing'
+            });
+        }
+
+        // Format the response for completed jobs
+        const response = {
+            status: job.status,
+            email: job.email,
+            inputSequence: job.input_sequence,
+            guides: job.result_data.guides.map(guide => {
+                console.log('Processing guide:', guide);  // Log each guide as we process it
+                
+                // Normalize score from [-2,2] to [0,100]
+                let normalizedScore = guide.sgRNA_Scorer || guide.score;
+                // Clamp score to [-2,2] range
+                normalizedScore = Math.max(-2, Math.min(2, normalizedScore));
+                // Convert to 0-100 range
+                normalizedScore = ((normalizedScore + 2) / 4) * 100;
+                
+                return {
+                    sequence: guide.sequence,
+                    position: guide.position,
+                    score: Math.round(normalizedScore), // Round to nearest integer
+                    gcContent: guide.gc_content,
+                    offTargets: guide.off_targets,
+                    strand: guide.strand
+                };
+            }),
+            createdAt: job.created_at
+        };
+
+        res.json(response);
     } catch (error) {
         console.error('Error fetching results:', error);
-        res.status(500).json({ error: 'Failed to fetch results' });
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

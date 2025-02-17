@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        console.log('Starting polling for resultId:', resultId);
+        console.log('Fetching results for ID:', resultId);
         fetchResults(resultId);
     }
 });
@@ -86,30 +86,24 @@ function fetchResults(resultId) {
     const loadingState = document.getElementById('loadingState');
     const resultsContent = document.getElementById('resultsContent');
     const errorState = document.getElementById('errorState');
+    const downloadBtn = document.getElementById('downloadBtn');
     const emailNotification = document.getElementById('emailNotification');
     const waitingNotification = document.getElementById('waitingNotification');
-
-    // Show initial loading state
-    loadingState.style.display = 'block';
-    resultsContent.style.display = 'none';
-    errorState.style.display = 'none';
-
-    console.log('Starting to poll for results:', resultId);
 
     function pollResults() {
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
-                if (!response.ok) {
-                    throw new Error(response.status === 404 ? 'Results not found' : 'Server error');
+                if (response.status === 500) {
+                    throw new Error('Server error');
                 }
                 return response.json();
             })
             .then(data => {
                 if (data.status === 'processing') {
-                    // Still processing, continue polling
+                    // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
                     
-                    // Update notifications based on email status
+                    // Show appropriate notification based on whether email was provided
                     if (data.email) {
                         emailNotification.style.display = 'block';
                         waitingNotification.style.display = 'none';
@@ -117,28 +111,43 @@ function fetchResults(resultId) {
                         emailNotification.style.display = 'none';
                         waitingNotification.style.display = 'block';
                     }
+                    
+                    loadingState.style.display = 'block';
+                    resultsContent.style.display = 'none';
+                    errorState.style.display = 'none';
+                    document.getElementById('sequenceMapSection').style.display = 'none';
+                    
                 } else if (data.status === 'completed') {
-                    console.log('Job completed, displaying results');
-                    // Results ready
+                    // Results are ready
                     loadingState.style.display = 'none';
                     resultsContent.style.display = 'block';
                     errorState.style.display = 'none';
+                    document.getElementById('sequenceMapSection').style.display = 'block';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
+                    downloadBtn.disabled = false;
                 } else {
+                    // Handle error state
                     throw new Error(data.error || 'Failed to process results');
                 }
             })
             .catch(error => {
                 console.error('Error fetching results:', error);
                 loadingState.style.display = 'none';
-                resultsContent.style.display = 'none';
                 errorState.style.display = 'block';
-                document.getElementById('errorMessage').textContent = error.message;
+                resultsContent.style.display = 'none';
+                document.getElementById('errorMessage').textContent = 
+                    error.message || 'Failed to load results. Please try again.';
             });
     }
 
-    // Start polling immediately
+    // Show initial loading state
+    loadingState.style.display = 'block';
+    resultsContent.style.display = 'none';
+    errorState.style.display = 'none';
+    downloadBtn.disabled = true;
+
+    // Start polling
     pollResults();
 }
 
@@ -152,61 +161,51 @@ function displayResults(data) {
     }
 
     console.log('Displaying results:', data);
-    const guideResults = document.getElementById('guideResults');
+    const resultsContent = document.getElementById('resultsContent');
     let html = '';
 
     // Display guide sequences
     data.guides.forEach((guide, index) => {
-        const gcContent = calculateGCContent(guide.sequence);
+        console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
         html += `
-            <div id="guide-${index + 1}" class="guide-result mb-4 p-3 border rounded">
-                <h4>Guide ${index + 1}</h4>
-                <div class="row">
-                    <div class="col-md-6">
-                        <p class="mb-2">Score: ${guide.score.toFixed(2)}</p>
-                        <p class="mb-2">Sequence: ${guide.sequence}</p>
-                        <p class="mb-2">Position: ${guide.position}</p>
-                        <p class="mb-2">GC Content: ${(gcContent * 100).toFixed(1)}%</p>
-                        <p class="mb-2">Off-targets: ${guide.offTargets || 0}</p>
-                        <p class="mb-2">Strand: ${guide.strand}</p>
+            <div class="guide-result" id="guide-${index + 1}">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Guide ${index + 1}</h5>
+                    <span class="score-badge">Score: ${(guide.score != null ? Number(guide.score).toFixed(2) : 'N/A')}</span>
+                </div>
+                <div class="guide-card">
+                    <div class="guide-sequence">
+                        <code>${guide.sequence}</code>
+                    </div>
+                    <div class="guide-details">
+                        <span class="detail-item">
+                            <i class="fas fa-map-marker-alt"></i> ${guide.position}
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-percentage"></i> ${Math.round(guide.gcContent)}% GC
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-exclamation-triangle"></i> ${guide.offTargets} off-target${guide.offTargets !== 1 ? 's' : ''}
+                        </span>
+                        <span class="detail-item">
+                            <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'}"></i> ${guide.strand} strand
+                        </span>
                     </div>
                 </div>
             </div>
         `;
     });
 
-    guideResults.innerHTML = html;
-}
-
-// Helper function to calculate GC content
-function calculateGCContent(sequence) {
-    const gcCount = (sequence.match(/[GC]/g) || []).length;
-    return gcCount / sequence.length;
+    resultsContent.innerHTML = html;
 }
 
 function createSequenceMap(sequence, guides) {
-    // First check if the required elements exist
-    const rulerNumbers = document.getElementById('rulerNumbers');
-    const rulerMarks = document.getElementById('rulerMarks');
-    const guideMarkers = document.getElementById('guideMarkers');
-    const seqLengthElement = document.getElementById('seqLength');
-
-    if (!rulerNumbers || !rulerMarks || !guideMarkers) {
-        console.error('Required sequence map elements not found');
-        return;
-    }
-
     const seqLength = sequence.length;
-    
     // Update the sequence length display
+    const seqLengthElement = document.getElementById('seqLength');
     if (seqLengthElement) {
         seqLengthElement.textContent = seqLength;
     }
-
-    // Clear existing content
-    rulerNumbers.innerHTML = '';
-    rulerMarks.innerHTML = '';
-    guideMarkers.innerHTML = '';
 
     // Create a scale function to convert bp positions to percentages
     function bpToPercent(bp) {
@@ -214,6 +213,12 @@ function createSequenceMap(sequence, guides) {
     }
 
     // Create ruler with precise bp positions
+    const rulerNumbers = document.getElementById('rulerNumbers');
+    const rulerMarks = document.getElementById('rulerMarks');
+    rulerNumbers.innerHTML = '';
+    rulerMarks.innerHTML = '';
+    
+    // Create numbers every 20bp
     for (let i = 0; i <= seqLength; i += 20) {
         // Create number
         const number = document.createElement('span');
@@ -234,6 +239,10 @@ function createSequenceMap(sequence, guides) {
     }
 
     // Create guide markers
+    const guideMarkers = document.getElementById('guideMarkers');
+    guideMarkers.innerHTML = '';
+    
+    // Track used vertical positions
     const usedPositions = new Set();
     
     guides.forEach((guide, index) => {
@@ -245,11 +254,19 @@ function createSequenceMap(sequence, guides) {
         // Calculate color based on score (now in range 0-100)
         const normalizedScore = guide.score / 100; // Convert to 0-1 range
         
-        // Create greyscale gradient
-        // 240 -> light grey (low score)
-        // 60 -> dark grey (high score)
-        const greyValue = Math.round(240 - (normalizedScore * 180));
-        const color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+        // Use a color gradient from red (poor) to yellow (medium) to green (good)
+        let color;
+        if (normalizedScore < 0.5) {
+            // Red to Yellow gradient for lower scores
+            const r = 255;
+            const g = Math.round(normalizedScore * 2 * 255);
+            color = `rgb(${r}, ${g}, 0)`;
+        } else {
+            // Yellow to Green gradient for higher scores
+            const r = Math.round((1 - (normalizedScore - 0.5) * 2) * 255);
+            const g = 255;
+            color = `rgb(${r}, ${g}, 0)`;
+        }
         
         marker.style.backgroundColor = color;
         marker.style.color = color; // This sets the arrow color to match
