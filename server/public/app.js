@@ -94,21 +94,21 @@ function fetchResults(resultId) {
     resultsContent.style.display = 'none';
     errorState.style.display = 'none';
 
-    console.log('Starting to poll for results:', resultId); // Add initial log
+    console.log('Starting to poll for results:', resultId);
 
     function pollResults() {
-        console.log('Polling for results:', resultId); // Add polling log
+        console.log('Polling for results:', resultId);
         
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
-                console.log('Poll response status:', response.status); // Add response status log
+                console.log('Poll response status:', response.status);
                 if (!response.ok) {
                     throw new Error(response.status === 404 ? 'Results not found' : 'Server error');
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Poll response data:', data); // Add response data log
+                console.log('Poll response data:', data);
                 
                 if (data.status === 'processing') {
                     console.log('Job still processing, will poll again in 2s');
@@ -144,7 +144,7 @@ function fetchResults(resultId) {
             });
     }
 
-    // Start polling
+    // Start polling immediately
     pollResults();
 }
 
