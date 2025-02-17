@@ -7,6 +7,10 @@ services:
     command: python -m watchdog.watchmedo auto-restart -d /app/service -p "*.py" -- python service.py
 
   app:
+    env_file:
+      - .env    # Add this if not present
+    environment:
+      - NODE_ENV=development
     volumes:
       - ./:/app
       - /app/node_modules
