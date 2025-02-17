@@ -1,5 +1,13 @@
 const nodemailer = require('nodemailer');
 
+// Add debug log at the top of the file
+console.log('Loading email service with config:', {
+    host: process.env.SES_HOST,
+    port: process.env.SES_PORT,
+    user: process.env.SES_USER,
+    pass: process.env.SES_PASS ? '***' : 'not set'
+});
+
 // Create reusable transporter for Amazon SES
 const transporter = nodemailer.createTransport({
     host: process.env.SES_HOST,
