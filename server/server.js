@@ -43,13 +43,16 @@ app.post('/api/generate', async (req, res) => {
     // Clean sequence
     const cleanSequence = sequence.replace(/[^ACTGactg]/g, '').toUpperCase();
 
+    const client = await pool.connect();
     try {
+        await client.query('BEGIN');
+        
         // Store email with job if provided
         const query = `
             INSERT INTO jobs (id, input_sequence, email, status)
             VALUES ($1, $2, $3, 'pending')
         `;
-        await pool.query(query, [resultId, cleanSequence, email || null]);
+        await client.query(query, [resultId, cleanSequence, email || null]);
 
         const job = await guideGenerationQueue.add({ 
             sequence: cleanSequence, 
@@ -57,11 +60,16 @@ app.post('/api/generate', async (req, res) => {
             email 
         });
         
+        await client.query('COMMIT');
+        
         console.log(`Job submitted from queue with ID: ${job.id} for resultId: ${resultId}`);
         res.json({ resultId });
     } catch (error) {
+        await client.query('ROLLBACK');
         console.error('Error in /api/generate:', error);
         res.status(500).send('Failed to queue the guide generation');
+    } finally {
+        client.release();
     }
 });
 
