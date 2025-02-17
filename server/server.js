@@ -86,7 +86,7 @@ app.get('/api/results/:resultId', async (req, res) => {
         `;
         
         const result = await pool.query(jobQuery, [resultId]);
-        console.log('Database result:', result.rows[0]); // Add this debug log
+        console.log('Database result:', result.rows[0]); // This log shows the raw DB result
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Job not found' });
@@ -104,12 +104,15 @@ app.get('/api/results/:resultId', async (req, res) => {
 
         // If job is completed, return the full response
         if (job.status === 'completed' && job.result_data) {
-            return res.json({
+            const response = {
                 status: 'completed',
                 inputSequence: job.input_sequence,
                 email: job.email,
-                ...job.result_data
-            });
+                guides: job.result_data.guides,
+                summary: job.result_data.summary
+            };
+            console.log('Sending completed response:', response); // Add this log
+            return res.json(response);
         }
 
         // Handle error state

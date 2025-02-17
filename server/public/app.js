@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        console.log('Fetching results for ID:', resultId);
+        console.log('Starting polling for resultId:', resultId);
         fetchResults(resultId);
     }
 });
@@ -94,18 +94,24 @@ function fetchResults(resultId) {
     resultsContent.style.display = 'none';
     errorState.style.display = 'none';
 
+    console.log('Starting to poll for results:', resultId); // Add initial log
+
     function pollResults() {
+        console.log('Polling for results:', resultId); // Add polling log
+        
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
+                console.log('Poll response status:', response.status); // Add response status log
                 if (!response.ok) {
                     throw new Error(response.status === 404 ? 'Results not found' : 'Server error');
                 }
                 return response.json();
             })
             .then(data => {
-                console.log('Poll response:', data);
+                console.log('Poll response data:', data); // Add response data log
                 
                 if (data.status === 'processing') {
+                    console.log('Job still processing, will poll again in 2s');
                     // Still processing, continue polling
                     setTimeout(pollResults, 2000);
                     
@@ -118,6 +124,7 @@ function fetchResults(resultId) {
                         waitingNotification.style.display = 'block';
                     }
                 } else if (data.status === 'completed') {
+                    console.log('Job completed, displaying results');
                     // Results ready
                     loadingState.style.display = 'none';
                     resultsContent.style.display = 'block';
