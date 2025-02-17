@@ -1,10 +1,10 @@
-const Queue = require('bull');
+const Bull = require('bull');
 const { pool } = require('./config');
 const { spawn } = require('child_process');
 const path = require('path');
 const { sendResultsEmail } = require('./services/email');
 
-const guideGenerationQueue = new Queue('guide-generation', {
+const guideGenerationQueue = new Bull('guide-generation', {
     redis: {
         host: process.env.REDIS_HOST || 'redis',
         port: process.env.REDIS_PORT || 6379,
@@ -18,16 +18,16 @@ pool.on('error', (err) => {
 
 // Add job processing logic
 guideGenerationQueue.process(async (job) => {
-    const { sequence, resultId, email } = job.data;
-    
     try {
-        console.log(`Starting job processing for ${resultId}`);
+        const { resultId, sequence, email } = job.data;
+        console.log(`Starting to process job ${resultId}`);
         
-        // Update the job status instead of inserting
+        // Update job status to processing
         await pool.query(
-            'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            'UPDATE jobs SET status = $1 WHERE id = $2',
             ['processing', resultId]
         );
+        console.log(`Updated job ${resultId} status to processing`);
 
         // Send job to Redis queue for Python service
         const redis = guideGenerationQueue.client;
@@ -47,11 +47,12 @@ guideGenerationQueue.process(async (job) => {
             checkResults();
         });
 
-        // Update the job with the results
-        await pool.query(
-            'UPDATE jobs SET status = $1, result_data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+        // When job completes, update the database with results
+        const updateResult = await pool.query(
+            'UPDATE jobs SET status = $1, result_data = $2 WHERE id = $3 RETURNING *',
             ['completed', results, resultId]
         );
+        console.log(`Updated job ${resultId} with results:`, updateResult.rows[0]);
 
         // Send email if provided
         if (email) {
@@ -64,12 +65,12 @@ guideGenerationQueue.process(async (job) => {
         }
 
         return { resultId, status: 'completed' };
-
     } catch (error) {
         console.error('Error processing job:', error);
         
+        // Update job status to failed
         await pool.query(
-            'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            'UPDATE jobs SET status = $1 WHERE id = $2',
             ['failed', resultId]
         );
         
