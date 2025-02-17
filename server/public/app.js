@@ -99,9 +99,14 @@ function fetchResults(resultId) {
                 return response.json();
             })
             .then(data => {
+                console.log('Poll response:', data); // Add this debug log
+                
                 if (data.status === 'processing') {
-                    // If still processing, continue polling after a delay
+                    // Still processing, continue polling
                     setTimeout(pollResults, 2000);
+                    loadingState.style.display = 'block';
+                    resultsContent.style.display = 'none';
+                    errorState.style.display = 'none';
                     
                     // Show appropriate notification based on whether email was provided
                     if (data.email) {
@@ -111,18 +116,11 @@ function fetchResults(resultId) {
                         emailNotification.style.display = 'none';
                         waitingNotification.style.display = 'block';
                     }
-                    
-                    loadingState.style.display = 'block';
-                    resultsContent.style.display = 'none';
-                    errorState.style.display = 'none';
-                    document.getElementById('sequenceMapSection').style.display = 'none';
-                    
                 } else if (data.status === 'completed') {
-                    // Results are ready
+                    // Results ready
                     loadingState.style.display = 'none';
                     resultsContent.style.display = 'block';
                     errorState.style.display = 'none';
-                    document.getElementById('sequenceMapSection').style.display = 'block';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
                     downloadBtn.disabled = false;
@@ -134,18 +132,12 @@ function fetchResults(resultId) {
             .catch(error => {
                 console.error('Error fetching results:', error);
                 loadingState.style.display = 'none';
-                errorState.style.display = 'block';
                 resultsContent.style.display = 'none';
+                errorState.style.display = 'block';
                 document.getElementById('errorMessage').textContent = 
                     error.message || 'Failed to load results. Please try again.';
             });
     }
-
-    // Show initial loading state
-    loadingState.style.display = 'block';
-    resultsContent.style.display = 'none';
-    errorState.style.display = 'none';
-    downloadBtn.disabled = true;
 
     // Start polling
     pollResults();
