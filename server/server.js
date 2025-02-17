@@ -78,19 +78,21 @@ app.get('/api/results/:resultId', async (req, res) => {
         const { resultId } = req.params;
         console.log('Fetching results for:', resultId);
 
-        // First check jobs table for status
+        // Query the jobs table
         const jobQuery = `
-            SELECT status, email, result_data 
+            SELECT id, status, email, result_data, input_sequence 
             FROM jobs 
             WHERE id = $1
         `;
-        const jobResult = await pool.query(jobQuery, [resultId]);
+        
+        const result = await pool.query(jobQuery, [resultId]);
+        console.log('Database result:', result.rows[0]); // Add this debug log
 
-        if (jobResult.rows.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Job not found' });
         }
 
-        const job = jobResult.rows[0];
+        const job = result.rows[0];
 
         // If job is still processing, return appropriate status
         if (job.status === 'pending' || job.status === 'processing') {
@@ -100,10 +102,12 @@ app.get('/api/results/:resultId', async (req, res) => {
             });
         }
 
-        // If job is completed, return the results
+        // If job is completed, return the full response
         if (job.status === 'completed' && job.result_data) {
             return res.json({
                 status: 'completed',
+                inputSequence: job.input_sequence,
+                email: job.email,
                 ...job.result_data
             });
         }
