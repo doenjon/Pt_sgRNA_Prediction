@@ -2,23 +2,28 @@ const nodemailer = require('nodemailer');
 
 // Create reusable transporter for Amazon SES
 const transporter = nodemailer.createTransport({
-    host: process.env.SES_HOST || 'email-smtp.us-east-1.amazonaws.com',
-    port: process.env.SES_PORT ? Number(process.env.SES_PORT) : 587,
-    secure: process.env.SES_PORT && process.env.SES_PORT === '465', // true if using port 465
+    host: process.env.SES_HOST,
+    port: process.env.SES_PORT,
+    secure: false,
     auth: {
         user: process.env.SES_USER,
         pass: process.env.SES_PASS
     },
-    tls: {
-        rejectUnauthorized: false
-    },
-    debug: true // Enable debugging output to help diagnose issues
+    debug: true,
+    logger: true  // Add this for more detailed logs
 });
 
-// Test the connection
+// Test the connection on startup
 transporter.verify((error, success) => {
     if (error) {
         console.log('SES connection failed:', error);
+        // Log the configuration (but mask the password)
+        console.log('SES Config:', {
+            host: process.env.SES_HOST,
+            port: process.env.SES_PORT,
+            user: process.env.SES_USER,
+            pass: process.env.SES_PASS ? '***' : 'not set'
+        });
     } else {
         console.log('SES is ready to send messages');
     }
