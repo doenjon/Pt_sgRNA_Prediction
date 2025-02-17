@@ -86,9 +86,13 @@ function fetchResults(resultId) {
     const loadingState = document.getElementById('loadingState');
     const resultsContent = document.getElementById('resultsContent');
     const errorState = document.getElementById('errorState');
-    const downloadBtn = document.getElementById('downloadBtn');
     const emailNotification = document.getElementById('emailNotification');
     const waitingNotification = document.getElementById('waitingNotification');
+
+    // Show initial loading state
+    loadingState.style.display = 'block';
+    resultsContent.style.display = 'none';
+    errorState.style.display = 'none';
 
     function pollResults() {
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
@@ -105,12 +109,7 @@ function fetchResults(resultId) {
                     // Still processing, continue polling
                     setTimeout(pollResults, 2000);
                     
-                    // Show loading state with appropriate message
-                    loadingState.style.display = 'block';
-                    resultsContent.style.display = 'none';
-                    errorState.style.display = 'none';
-                    
-                    // Show appropriate notification based on whether email was provided
+                    // Update notifications based on email status
                     if (data.email) {
                         emailNotification.style.display = 'block';
                         waitingNotification.style.display = 'none';
@@ -125,7 +124,6 @@ function fetchResults(resultId) {
                     errorState.style.display = 'none';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
-                    downloadBtn.disabled = false;
                 } else {
                     throw new Error(data.error || 'Failed to process results');
                 }
@@ -135,6 +133,7 @@ function fetchResults(resultId) {
                 loadingState.style.display = 'none';
                 resultsContent.style.display = 'none';
                 errorState.style.display = 'block';
+                document.getElementById('errorMessage').textContent = error.message;
             });
     }
 
