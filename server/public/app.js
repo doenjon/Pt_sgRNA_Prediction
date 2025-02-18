@@ -101,9 +101,9 @@ function fetchResults(resultId) {
                 return response.json();
             })
             .then(data => {
-                console.log('Poll results data:', data); // Add this line
+                console.log('Poll results data:', data);
 
-                if (data.status === 'processing') {
+                if (data.status === 'pending' || data.status === 'processing') {
                     // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
                     

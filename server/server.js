@@ -47,13 +47,14 @@ app.post('/api/generate', async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // Store email with job if provided
+        // Insert job as 'pending'
         const query = `
             INSERT INTO jobs (id, input_sequence, email, status)
             VALUES ($1, $2, $3, 'pending')
         `;
         await client.query(query, [resultId, cleanSequence, email || null]);
 
+        // Add job to the queue
         const job = await guideGenerationQueue.add({ 
             sequence: cleanSequence, 
             resultId,

@@ -23,7 +23,7 @@ guideGenerationQueue.process(async (job) => {
     try {
         console.log(`Starting job processing for ${resultId}`);
         
-        // Update the job status instead of inserting
+        // Update status to 'processing'
         await pool.query(
             'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             ['processing', resultId]
@@ -47,7 +47,7 @@ guideGenerationQueue.process(async (job) => {
             checkResults();
         });
 
-        // Update the job with the results
+        // Update status to 'completed'
         await pool.query(
             'UPDATE jobs SET status = $1, result_data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
             ['completed', results, resultId]
@@ -73,6 +73,7 @@ guideGenerationQueue.process(async (job) => {
     } catch (error) {
         console.error('Error processing job:', error);
         
+        // Update status to 'failed'
         await pool.query(
             'UPDATE jobs SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
             ['failed', resultId]
