@@ -290,30 +290,33 @@ code {
 
 .guide-marker {
     position: absolute;
-    height: 15px;
+    height: 12px;
+    border-radius: 2px;
     cursor: pointer;
-    transition: opacity 0.2s;
+    user-select: none;
+    transition: all 0.2s ease;
 }
 
 .guide-marker::before {
     content: attr(data-tooltip);
     position: absolute;
-    right: calc(100% + 5px);
+    right: 100%;
+    margin-right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
+    background: white;
+    color: #6c757d;
+    padding: 0 4px;
+    border-radius: 10px;
     font-size: 12px;
+    border: 1px solid #e9ecef;
     white-space: nowrap;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s;
+    display: none;
+    z-index: 100;
 }
 
 .guide-marker:hover::before {
-    opacity: 1;
+    display: block;
 }
 
 /* Remove the existing arrow styles and add new ones */
