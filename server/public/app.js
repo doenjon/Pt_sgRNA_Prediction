@@ -174,6 +174,14 @@ function displayResults(data) {
     // Display guide sequences
     data.guides.forEach((guide, index) => {
         console.log(`Guide ${index + 1} data:`, guide);  // Log each guide's data
+
+        // Calculate GC content
+        const gcContent = guide.sequence ? 
+            ((guide.sequence.match(/[GC]/gi) || []).length / guide.sequence.length) * 100 : 0;
+
+        // Ensure offTargets is defined
+        const offTargets = guide.offTargets !== undefined ? guide.offTargets : 'N/A';
+
         html += `
             <div class="guide-result" id="guide-${index + 1}">
                 <div class="d-flex justify-content-between align-items-center mb-2">
@@ -189,10 +197,10 @@ function displayResults(data) {
                             position ${guide.position}
                         </span>
                         <span class="detail-item">
-                            ${Math.round(guide.gcContent)}% GC
+                            ${Math.round(gcContent)}% GC
                         </span>
                         <span class="detail-item">
-                            ${guide.offTargets} off-targets
+                            ${offTargets} off-targets
                         </span>
                         <span class="detail-item">
                             ${guide.strand} strand
