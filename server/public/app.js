@@ -261,13 +261,17 @@ function createSequenceMap(sequence, guides) {
     const usedPositions = new Set();
     
     guides.forEach((guide, index) => {
+        // Create the guide marker
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
         
-        // Add tooltip content
-        marker.setAttribute('data-tooltip', `Guide ${index + 1}`);
+        // Create the tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.className = 'guide-tooltip';
+        tooltip.textContent = `Guide ${index + 1}`;
+        marker.appendChild(tooltip);
         
         // Calculate position and width
         const GUIDE_LENGTH = guide.sequence.length;

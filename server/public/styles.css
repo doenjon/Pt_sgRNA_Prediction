@@ -296,12 +296,9 @@ code {
     cursor: pointer;
     user-select: none;
     transition: all 0.2s ease;
-    /* Temporarily comment out the clip-path: */
-    /* clip-path: polygon(0px 0px, calc(100% - 8px) 0px, 100% 50%, calc(100% - 8px) 100%, 0px 100%); */
 }
 
-.guide-marker::before {
-    content: attr(data-tooltip);
+.guide-tooltip {
     position: absolute;
     right: 100%;
     margin-right: 8px;
@@ -315,12 +312,11 @@ code {
     border: 1px solid #e9ecef;
     white-space: nowrap;
     display: none;
-    z-index: 100;
+    z-index: 9999;
 }
 
-.guide-marker:hover::before {
+.guide-marker:hover .guide-tooltip {
     display: block;
-    z-index: 9999 !important;
 }
 
 /* Remove the existing arrow styles and add new ones */
