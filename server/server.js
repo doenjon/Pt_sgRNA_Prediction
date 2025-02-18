@@ -77,7 +77,6 @@ app.get('/api/results/:resultId', async (req, res) => {
     try {
         const { resultId } = req.params;
         
-        // Update query to include email
         const query = `
             SELECT 
                 jobs.input_sequence,
@@ -94,58 +93,19 @@ app.get('/api/results/:resultId', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(202).json({ 
                 status: 'processing',
-                message: 'Job is being processed'
+                message: 'Job is initializing'
             });
         }
 
         const job = result.rows[0];
-        console.log('Raw job data from database:', {
-            status: job.status,
-            result_data: job.result_data,
-            has_guides: job.result_data?.guides?.length > 0
-        });
 
-        // Log the first guide's complete data
-        if (job.result_data?.guides?.length > 0) {
-            console.log('First guide complete data:', job.result_data.guides[0]);
-        }
-
-        // Check if job is still processing
-        if (job.status !== 'completed' || !job.result_data?.guides) {
-            return res.status(202).json({ 
-                status: job.status,
-                message: 'Results are still processing'
-            });
-        }
-
-        // Format the response for completed jobs
-        const response = {
+        return res.json({
             status: job.status,
             email: job.email,
-            inputSequence: job.input_sequence,
-            guides: job.result_data.guides.map(guide => {
-                console.log('Processing guide:', guide);  // Log each guide as we process it
-                
-                // Normalize score from [-2,2] to [0,100]
-                let normalizedScore = guide.sgRNA_Scorer || guide.score;
-                // Clamp score to [-2,2] range
-                normalizedScore = Math.max(-2, Math.min(2, normalizedScore));
-                // Convert to 0-100 range
-                normalizedScore = ((normalizedScore + 2) / 4) * 100;
-                
-                return {
-                    sequence: guide.sequence,
-                    position: guide.position,
-                    score: Math.round(normalizedScore), // Round to nearest integer
-                    gcContent: guide.gc_content,
-                    offTargets: guide.off_targets,
-                    strand: guide.strand
-                };
-            }),
-            createdAt: job.created_at
-        };
+            message: job.status === 'processing' ? 'Job is being processed' : undefined,
+            ...job.result_data
+        });
 
-        res.json(response);
     } catch (error) {
         console.error('Error fetching results:', error);
         res.status(500).json({ error: 'Internal server error' });
