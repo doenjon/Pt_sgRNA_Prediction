@@ -179,16 +179,16 @@ function displayResults(data) {
                     </div>
                     <div class="guide-details">
                         <span class="detail-item">
-                            <i class="fas fa-map-marker-alt"></i> ${guide.position}
+                            position ${guide.position}
                         </span>
                         <span class="detail-item">
-                            <i class="fas fa-percentage"></i> ${Math.round(guide.gcContent)}% GC
+                            ${Math.round(guide.gcContent)}% GC
                         </span>
                         <span class="detail-item">
-                            <i class="fas fa-exclamation-triangle"></i> ${guide.offTargets} off-target${guide.offTargets !== 1 ? 's' : ''}
+                            ${guide.offTargets} off-targets
                         </span>
                         <span class="detail-item">
-                            <i class="fas fa-arrow-${guide.strand === '+' ? 'right' : 'left'}"></i> ${guide.strand} strand
+                            ${guide.strand} strand
                         </span>
                     </div>
                 </div>
@@ -254,19 +254,11 @@ function createSequenceMap(sequence, guides) {
         // Calculate color based on score (now in range 0-100)
         const normalizedScore = guide.score / 100; // Convert to 0-1 range
         
-        // Use a color gradient from red (poor) to yellow (medium) to green (good)
-        let color;
-        if (normalizedScore < 0.5) {
-            // Red to Yellow gradient for lower scores
-            const r = 255;
-            const g = Math.round(normalizedScore * 2 * 255);
-            color = `rgb(${r}, ${g}, 0)`;
-        } else {
-            // Yellow to Green gradient for higher scores
-            const r = Math.round((1 - (normalizedScore - 0.5) * 2) * 255);
-            const g = 255;
-            color = `rgb(${r}, ${g}, 0)`;
-        }
+        // Use grey scale - light grey (rgb(220,220,220)) to dark grey (rgb(60,60,60))
+        const minGrey = 220; // Lighter grey for low scores
+        const maxGrey = 60;  // Darker grey for high scores
+        const greyValue = Math.round(minGrey - (normalizedScore * (minGrey - maxGrey)));
+        const color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
         
         marker.style.backgroundColor = color;
         marker.style.color = color; // This sets the arrow color to match

@@ -99,6 +99,28 @@ app.get('/api/results/:resultId', async (req, res) => {
 
         const job = result.rows[0];
 
+        // If we have guide data, normalize the scores
+        if (job.result_data?.guides) {
+            job.result_data.guides = job.result_data.guides.map(guide => {
+                // Get the raw score
+                let score = guide.sgRNA_Scorer || guide.score;
+                
+                // Clamp the score to [-2, 2] range
+                score = Math.max(-2, Math.min(2, score));
+                
+                // Convert to 0-100 range: 
+                // -2 maps to 0
+                // 0 maps to 50
+                // 2 maps to 100
+                const normalizedScore = Math.round(((score + 2) / 4) * 100);
+                
+                return {
+                    ...guide,
+                    score: normalizedScore
+                };
+            });
+        }
+
         return res.json({
             status: job.status,
             email: job.email,
