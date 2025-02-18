@@ -472,3 +472,10 @@ code {
     text-align: center;
     z-index: 1000;
 }
+
+.guide-marker::before {
+    display: block !important;
+    background: pink !important;
+    color: black !important;
+    z-index: 9999 !important;
+}

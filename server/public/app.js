@@ -274,14 +274,9 @@ function createSequenceMap(sequence, guides) {
         let leftPercent;
         
         if (guide.strand === '+') {
-            // For + strand, position is at the cut site (near right end)
-            // Move left by guide length minus 3bp (typical distance from PAM to cut site)
-            // Subtract 1 to adjust position
             const guideStart = (guide.position - 1) - (GUIDE_LENGTH - 3);
             leftPercent = (guideStart / seqLength) * 100;
         } else {
-            // For - strand, position is already at the left end
-            // Subtract 1 to adjust position
             leftPercent = ((guide.position - 1) / seqLength) * 100;
         }
         
