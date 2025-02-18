@@ -318,6 +318,7 @@ code {
 
 .guide-marker:hover::before {
     display: block;
+    z-index: 9999 !important;
 }
 
 /* Remove the existing arrow styles and add new ones */
