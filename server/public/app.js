@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function fetchResults(resultId) {
+    console.log("Fetching results for ID:", resultId);
     const loadingState = document.getElementById('loadingState');
     const resultsContent = document.getElementById('resultsContent');
     const errorState = document.getElementById('errorState');
@@ -150,6 +151,7 @@ function fetchResults(resultId) {
     errorState.style.display = 'none';
     downloadBtn.disabled = true;
 
+    console.log("Starting polling");
     // Start polling
     pollResults();
 }
