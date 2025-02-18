@@ -267,17 +267,28 @@ function createSequenceMap(sequence, guides) {
         marker.setAttribute('data-strand', guide.strand);
         
         // Calculate position and width
-        const leftPercent = (guide.position / seqLength) * 100;
-        const widthPercent = (guide.sequence.length / seqLength) * 100;
+        const GUIDE_LENGTH = guide.sequence.length; // typically 23bp
+        let leftPercent;
         
-        // Calculate color based on score (assuming scores are 0-100)
+        if (guide.strand === '+') {
+            // For + strand, position is at the cut site (near right end)
+            // Move left by guide length minus 3bp (typical distance from PAM to cut site)
+            const guideStart = guide.position - (GUIDE_LENGTH - 3);
+            leftPercent = (guideStart / seqLength) * 100;
+        } else {
+            // For - strand, position is already at the left end
+            leftPercent = (guide.position / seqLength) * 100;
+        }
+        
+        const widthPercent = (GUIDE_LENGTH / seqLength) * 100;
+        
+        // Calculate color based on score
         const score = guide.score || 0;
-        // Convert score to a grayscale value (150 for worst scores, 60 for best scores)
         const grayValue = Math.round(150 - (score * 0.9));
         const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
         
         marker.style.backgroundColor = color;
-        marker.style.color = color; // This sets the arrow color to match
+        marker.style.color = color;
         
         // Add arrow tip based on strand
         if (guide.strand === '+') {
