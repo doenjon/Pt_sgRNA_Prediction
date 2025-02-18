@@ -298,16 +298,21 @@ code {
 }
 
 .guide-marker::before {
-    /* For debugging: force the tooltip to appear at the top left of the marker */
-    display: block !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    background: pink !important;
-    color: black !important;
-    padding: 2px !important;
-    z-index: 9999 !important;
     content: attr(data-tooltip);
+    position: absolute;
+    right: 100%;
+    margin-right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: white;
+    color: #6c757d;
+    padding: 0 4px;
+    border-radius: 10px;
+    font-size: 12px;
+    border: 1px solid #e9ecef;
+    white-space: nowrap;
+    display: none;
+    z-index: 100;
 }
 
 .guide-marker:hover::before {
