@@ -91,6 +91,7 @@ function fetchResults(resultId) {
     const waitingNotification = document.getElementById('waitingNotification');
 
     function pollResults() {
+        console.log("Polling results for ID:", resultId);
         fetch(`${API_BASE_URL}/api/results/${resultId}`)
             .then(response => {
                 if (response.status === 500) {
