@@ -293,7 +293,6 @@ function createSequenceMap(sequence, guides) {
         const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
         
         marker.style.backgroundColor = color;
-        marker.style.color = color;
         
         // Add arrow tip based on strand
         if (guide.strand === '+') {
