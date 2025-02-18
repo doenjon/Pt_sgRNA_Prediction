@@ -179,8 +179,8 @@ function displayResults(data) {
         const gcContent = guide.sequence ? 
             ((guide.sequence.match(/[GC]/gi) || []).length / guide.sequence.length) * 100 : 0;
 
-        // Ensure offTargets is defined and display "0 off-targets" if it's zero
-        const offTargets = guide.offTargets !== undefined ? guide.offTargets : 0;
+        // Ensure off_targets is defined and display "0 off-targets" if it's zero
+        const offTargets = guide.off_targets !== undefined ? guide.off_targets : 0;
 
         html += `
             <div class="guide-result" id="guide-${index + 1}">
