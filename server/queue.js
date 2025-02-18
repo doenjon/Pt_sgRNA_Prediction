@@ -52,6 +52,11 @@ guideGenerationQueue.process(async (job) => {
             'UPDATE jobs SET status = $1, result_data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
             ['completed', results, resultId]
         );
+        console.log('Updated job status to completed:', {
+            resultId,
+            status: 'completed',
+            hasGuides: results?.guides?.length > 0
+        });
 
         // Send email if provided
         if (email) {

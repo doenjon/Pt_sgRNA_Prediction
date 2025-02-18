@@ -125,7 +125,9 @@ app.get('/api/results/:resultId', async (req, res) => {
             status: job.status,
             email: job.email,
             message: job.status === 'processing' ? 'Job is being processed' : undefined,
-            ...job.result_data
+            guides: job.result_data?.guides || [],
+            inputSequence: job.result_data?.inputSequence || job.input_sequence,
+            createdAt: job.created_at
         });
 
     } catch (error) {
