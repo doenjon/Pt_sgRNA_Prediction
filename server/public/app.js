@@ -129,7 +129,6 @@ function fetchResults(resultId) {
                     document.getElementById('sequenceMapSection').style.display = 'block';
                     displayResults(data);
                     createSequenceMap(data.inputSequence, data.guides);
-                    downloadBtn.disabled = false;
                 } else {
                     // Handle error state
                     throw new Error(data.error || 'Failed to process results');
@@ -166,7 +165,11 @@ function displayResults(data) {
 
     console.log('Displaying results:', data);
     const resultsContent = document.getElementById('resultsContent');
+    const downloadBtn = document.getElementById('downloadBtn');
     let html = '';
+
+    // Show download button when results are ready
+    downloadBtn.style.display = 'inline-block';
 
     // Display guide sequences
     data.guides.forEach((guide, index) => {
@@ -353,6 +356,7 @@ function isPositionOverlapping(left, width, top, usedPositions) {
     return false;
 }
 
+// Add event listener for download button
 document.addEventListener('DOMContentLoaded', function() {
     const downloadBtn = document.getElementById('downloadBtn');
     if (downloadBtn) {
