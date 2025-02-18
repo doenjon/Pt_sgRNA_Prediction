@@ -268,20 +268,51 @@ function createSequenceMap(sequence, guides) {
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
         
-        // Create tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = 'floating-tooltip';
-        tooltip.textContent = `Guide ${index + 1}`;
-        document.body.appendChild(tooltip);
-        activeTooltip = tooltip;
+        // Instead of creating a tooltip element, add mouse events
+        marker.addEventListener('mouseenter', (e) => {
+            // Create tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'floating-tooltip';
+            tooltip.textContent = `Guide ${index + 1}`;
+            document.body.appendChild(tooltip);
+            activeTooltip = tooltip;
+            
+            // Position tooltip near mouse
+            updateTooltipPosition(e, tooltip);
+        });
         
-        // Get marker position
-        const markerRect = marker.getBoundingClientRect();
-        // Position tooltip to the left of the marker
-        tooltip.style.left = (markerRect.left - 60) + 'px';  // 60px to the left of marker
-        tooltip.style.top = (markerRect.top + (markerRect.height/2) - 10) + 'px';  // Vertically centered
+        marker.addEventListener('mousemove', (e) => {
+            if (activeTooltip) {
+                updateTooltipPosition(e, activeTooltip);
+            }
+        });
         
-        marker.style.backgroundColor = guide.score ? `rgb(${150 - (guide.score * 0.9)}, ${150 - (guide.score * 0.9)}, ${150 - (guide.score * 0.9)})` : 'gray';
+        marker.addEventListener('mouseleave', () => {
+            if (activeTooltip) {
+                activeTooltip.remove();
+                activeTooltip = null;
+            }
+        });
+        
+        // Calculate position and width
+        const GUIDE_LENGTH = guide.sequence.length;
+        let leftPercent;
+        
+        if (guide.strand === '+') {
+            const guideStart = (guide.position - 1) - (GUIDE_LENGTH - 3);
+            leftPercent = (guideStart / seqLength) * 100;
+        } else {
+            leftPercent = ((guide.position - 1) / seqLength) * 100;
+        }
+        
+        const widthPercent = (GUIDE_LENGTH / seqLength) * 100;
+        
+        // Calculate color based on score
+        const score = guide.score || 0;
+        const grayValue = Math.round(150 - (score * 0.9));
+        const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+        
+        marker.style.backgroundColor = color;
         
         // Add arrow tip based on strand
         if (guide.strand === '+') {
@@ -291,16 +322,16 @@ function createSequenceMap(sequence, guides) {
         }
         
         // Set position and width
-        marker.style.left = `${bpToPercent(guide.position - 1)}%`;
-        marker.style.width = `${bpToPercent(guide.sequence.length)}%`;
+        marker.style.left = `${leftPercent}%`;
+        marker.style.width = `${widthPercent}%`;
 
         // Handle vertical stacking (existing code)
         let verticalPosition = 0;
-        while (isPositionOverlapping(bpToPercent(guide.position - 1), bpToPercent(guide.sequence.length), verticalPosition, usedPositions)) {
+        while (isPositionOverlapping(leftPercent, widthPercent, verticalPosition, usedPositions)) {
             verticalPosition += 20;
         }
         marker.style.top = `${verticalPosition}px`;
-        usedPositions.add({ left: bpToPercent(guide.position - 1), width: bpToPercent(guide.sequence.length), top: verticalPosition });
+        usedPositions.add({ left: leftPercent, width: widthPercent, top: verticalPosition });
 
         // Add event listeners (existing code)
         marker.addEventListener('mouseenter', () => {
@@ -309,10 +340,8 @@ function createSequenceMap(sequence, guides) {
         });
         
         marker.addEventListener('mouseleave', () => {
-            if (activeTooltip) {
-                activeTooltip.remove();
-                activeTooltip = null;
-            }
+            const guideElement = document.querySelector(`#guide-${index + 1}`);
+            if (guideElement) guideElement.classList.remove('highlight');
         });
         
         // Add click handler for scrolling
@@ -367,4 +396,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function updateTooltipPosition(event, tooltip) {
+    const x = event.pageX;
+    const y = event.pageY;
+    tooltip.style.left = (x - 50) + 'px';  // Offset to the left of cursor
+    tooltip.style.top = (y - 30) + 'px';   // Offset above cursor
+}
 

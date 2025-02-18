@@ -466,7 +466,7 @@ code {
 }
 
 .floating-tooltip {
-    position: fixed;
+    position: fixed;  /* Fixed positioning relative to viewport */
     background: white;
     color: #333;
     padding: 4px 8px;
@@ -476,5 +476,4 @@ code {
     pointer-events: none;
     z-index: 9999;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transform: translateY(-50%);  /* Center vertically */
 }
