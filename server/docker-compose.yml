@@ -28,6 +28,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - DB_HOST=db
       - NODE_ENV=production
+      - SES_HOST=${SES_HOST}
+      - SES_PORT=${SES_PORT}
+      - SES_USER=${SES_USER}
+      - SES_PASS=${SES_PASS}
+      - SES_FROM=${SES_FROM}
     restart: unless-stopped
 
   guide_design:

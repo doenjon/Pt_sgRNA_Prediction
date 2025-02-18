@@ -4,27 +4,60 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
     host: process.env.SES_HOST || 'email-smtp.us-east-1.amazonaws.com',
     port: process.env.SES_PORT ? Number(process.env.SES_PORT) : 587,
-    secure: process.env.SES_PORT && process.env.SES_PORT === '465', // true if using port 465
+    secure: false, // For port 587, this should be false
     auth: {
         user: process.env.SES_USER,
         pass: process.env.SES_PASS
     },
     tls: {
-        rejectUnauthorized: false
+        // Required for AWS SES
+        ciphers:'HIGH',
+        rejectUnauthorized: true
     },
-    debug: true // Enable debugging output to help diagnose issues
+    debug: true, // Keep debug enabled
+    logger: true  // Add this to get more detailed logs
 });
 
-// Test the connection
+// Add this before verify
+console.log('Attempting SMTP connection with:', {
+    host: process.env.SES_HOST,
+    port: process.env.SES_PORT,
+    secure: false,
+    auth: {
+        user: process.env.SES_USER ? 'SET' : 'NOT SET',
+        pass: process.env.SES_PASS ? 'SET' : 'NOT SET'
+    }
+});
+
+// Test the connection with more detailed error logging
 transporter.verify((error, success) => {
     if (error) {
-        console.log('SES connection failed:', error);
+        console.log('Email service configuration:', {
+            host: process.env.SES_HOST,
+            port: process.env.SES_PORT,
+            secure: false,
+            username: process.env.SES_USER ? '(set)' : '(not set)',
+            password: process.env.SES_PASS ? '(set)' : '(not set)'
+        });
+        console.log('Email service error details:', {
+            code: error.code,
+            command: error.command,
+            response: error.response,
+            responseCode: error.responseCode,
+            message: error.message,
+            stack: error.stack // Add stack trace
+        });
     } else {
-        console.log('SES is ready to send messages');
+        console.log('Email service is ready');
     }
 });
 
 async function sendResultsEmail(email, resultId) {
+    if (!process.env.SES_USER || !process.env.SES_PASS) {
+        console.log('Email service not configured - skipping email notification');
+        return;
+    }
+
     const resultsUrl = `${process.env.BASE_URL || 'http://localhost'}/results.html?resultId=${resultId}`;
     
     try {
@@ -41,8 +74,8 @@ async function sendResultsEmail(email, resultId) {
         });
         console.log(`Results email sent to ${email}`);
     } catch (error) {
-        console.error('Error sending email via SES:', error);
-        throw error;
+        console.error('Failed to send email:', error.message);
+        // Don't throw the error - allow the application to continue even if email fails
     }
 }
 
