@@ -1,5 +1,7 @@
 const API_BASE_URL = window.location.port ? `${window.location.protocol}//${window.location.hostname}:${window.location.port}` : `${window.location.protocol}//${window.location.hostname}`;
 
+let activeTooltip = null;
+
 document.getElementById('guideForm')?.addEventListener('submit', function(event) {
     event.preventDefault();
     
@@ -261,18 +263,36 @@ function createSequenceMap(sequence, guides) {
     const usedPositions = new Set();
     
     guides.forEach((guide, index) => {
-        // Create the guide marker
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
         
-        // Create the tooltip element
-        const tooltip = document.createElement('div');
-        tooltip.className = 'guide-tooltip';
-        tooltip.textContent = `Guide ${index + 1}`;
-        console.log('Created tooltip:', tooltip);
-        marker.appendChild(tooltip);
+        // Instead of creating a tooltip element, add mouse events
+        marker.addEventListener('mouseenter', (e) => {
+            // Create tooltip
+            const tooltip = document.createElement('div');
+            tooltip.className = 'floating-tooltip';
+            tooltip.textContent = `Guide ${index + 1}`;
+            document.body.appendChild(tooltip);
+            activeTooltip = tooltip;
+            
+            // Position tooltip near mouse
+            updateTooltipPosition(e, tooltip);
+        });
+        
+        marker.addEventListener('mousemove', (e) => {
+            if (activeTooltip) {
+                updateTooltipPosition(e, activeTooltip);
+            }
+        });
+        
+        marker.addEventListener('mouseleave', () => {
+            if (activeTooltip) {
+                activeTooltip.remove();
+                activeTooltip = null;
+            }
+        });
         
         // Calculate position and width
         const GUIDE_LENGTH = guide.sequence.length;
@@ -376,4 +396,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function updateTooltipPosition(event, tooltip) {
+    const x = event.pageX;
+    const y = event.pageY;
+    tooltip.style.left = (x - 50) + 'px';  // Offset to the left of cursor
+    tooltip.style.top = (y - 30) + 'px';   // Offset above cursor
+}
 

@@ -300,21 +300,7 @@ code {
 }
 
 .guide-tooltip {
-    position: absolute;
-    right: 100%;
-    margin-right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: white;
-    color: #333 !important;
-    padding: 0 4px;
-    border-radius: 10px;
-    font-size: 12px;
-    border: 1px solid #e9ecef;
-    white-space: nowrap;
-    display: block !important;
-    z-index: 9999 !important;
-    pointer-events: none;
+    display: none;
 }
 
 .guide-marker:hover .guide-tooltip {
@@ -477,4 +463,17 @@ code {
 
 .guide-marker::before {
     display: none !important;
+}
+
+.floating-tooltip {
+    position: fixed;  /* Fixed positioning relative to viewport */
+    background: white;
+    color: #333;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    border: 1px solid #e9ecef;
+    pointer-events: none;
+    z-index: 9999;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
