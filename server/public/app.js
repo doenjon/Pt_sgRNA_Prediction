@@ -149,7 +149,6 @@ function fetchResults(resultId) {
     loadingState.style.display = 'block';
     resultsContent.style.display = 'none';
     errorState.style.display = 'none';
-    downloadBtn.disabled = true;
 
     console.log("Starting polling");
     // Start polling
