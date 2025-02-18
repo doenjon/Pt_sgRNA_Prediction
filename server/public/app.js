@@ -99,6 +99,8 @@ function fetchResults(resultId) {
                 return response.json();
             })
             .then(data => {
+                console.log('Poll results data:', data); // Add this line
+
                 if (data.status === 'processing') {
                     // If still processing, continue polling after a delay
                     setTimeout(pollResults, 2000);
