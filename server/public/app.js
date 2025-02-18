@@ -263,46 +263,18 @@ function createSequenceMap(sequence, guides) {
     guides.forEach((guide, index) => {
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
-        marker.setAttribute('data-guide-id', index + 1);
-        marker.setAttribute('data-strand', guide.strand);
-
-        // Calculate color based on score (now in range 0-100)
-        const normalizedScore = guide.score / 100; // Convert to 0-1 range
         
-        // Use grey scale - light grey (rgb(220,220,220)) to dark grey (rgb(60,60,60))
-        const minGrey = 220; // Lighter grey for low scores
-        const maxGrey = 60;  // Darker grey for high scores
-        const greyValue = Math.round(minGrey - (normalizedScore * (minGrey - maxGrey)));
-        const color = `rgb(${greyValue}, ${greyValue}, ${greyValue})`;
+        // Calculate position and width
+        const leftPercent = (guide.position / seqLength) * 100;
+        const widthPercent = (guide.sequence.length / seqLength) * 100;
         
-        marker.style.backgroundColor = color;
-        marker.style.color = color; // This sets the arrow color to match
-
-        // Calculate exact guide position
-        const GUIDE_LENGTH = 23;  // bp
-        let guideStart;          // leftmost bp position
-
-        if (guide.strand === '+') {
-            // For + strand, cut site is 3bp from right, shift left by 1bp
-            guideStart = guide.position - 21;
-        } else {
-            // For - strand, shift left by 1bp
-            guideStart = guide.position - 1;
-        }
-
-        // Convert bp positions to percentages
-        const leftPercent = bpToPercent(guideStart);
-        const widthPercent = bpToPercent(GUIDE_LENGTH);
-
-        console.log(`Guide ${index + 1}:`, {
-            strand: guide.strand,
-            position: guide.position,
-            guideStart,
-            guideEnd: guideStart + GUIDE_LENGTH,
-            leftPercent: leftPercent.toFixed(2) + '%',
-            widthPercent: widthPercent.toFixed(2) + '%'
-        });
-
+        // Calculate color based on score (assuming scores are 0-100)
+        const score = guide.score || 0;
+        // Convert score to a grayscale value (255 for best scores, 150 for worst scores)
+        const grayValue = Math.round(150 + (score * 1.05));
+        marker.style.backgroundColor = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+        
+        // Set position and width
         marker.style.left = `${leftPercent}%`;
         marker.style.width = `${widthPercent}%`;
 
