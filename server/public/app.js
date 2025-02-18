@@ -263,6 +263,8 @@ function createSequenceMap(sequence, guides) {
     guides.forEach((guide, index) => {
         const marker = document.createElement('div');
         marker.className = 'guide-marker';
+        marker.setAttribute('data-guide-id', index + 1);
+        marker.setAttribute('data-strand', guide.strand);
         
         // Calculate position and width
         const leftPercent = (guide.position / seqLength) * 100;
@@ -270,9 +272,19 @@ function createSequenceMap(sequence, guides) {
         
         // Calculate color based on score (assuming scores are 0-100)
         const score = guide.score || 0;
-        // Convert score to a grayscale value (255 for best scores, 150 for worst scores)
-        const grayValue = Math.round(150 + (score * 1.05));
-        marker.style.backgroundColor = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+        // Convert score to a grayscale value (150 for worst scores, 60 for best scores)
+        const grayValue = Math.round(150 - (score * 0.9));
+        const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+        
+        marker.style.backgroundColor = color;
+        marker.style.color = color; // This sets the arrow color to match
+        
+        // Add arrow tip based on strand
+        if (guide.strand === '+') {
+            marker.style.clipPath = 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)';
+        } else {
+            marker.style.clipPath = 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
+        }
         
         // Set position and width
         marker.style.left = `${leftPercent}%`;
