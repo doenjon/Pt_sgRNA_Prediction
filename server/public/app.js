@@ -266,8 +266,11 @@ function createSequenceMap(sequence, guides) {
         marker.setAttribute('data-guide-id', index + 1);
         marker.setAttribute('data-strand', guide.strand);
         
+        // Add tooltip content
+        marker.setAttribute('data-tooltip', `Guide ${index + 1} (${guide.strand} strand)`);
+        
         // Calculate position and width
-        const GUIDE_LENGTH = guide.sequence.length; // typically 23bp
+        const GUIDE_LENGTH = guide.sequence.length;
         let leftPercent;
         
         if (guide.strand === '+') {
