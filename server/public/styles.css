@@ -466,14 +466,23 @@ code {
 }
 
 .floating-tooltip {
-    position: fixed;  /* Fixed positioning relative to viewport */
-    background: white;
-    color: #333;
+    position: fixed;
+    background: #333;  /* Darker background */
+    color: white;      /* White text */
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
     border: 1px solid #e9ecef;
     pointer-events: none;
-    z-index: 9999;
+    z-index: 99999;    /* Very high z-index */
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Remove any conflicting styles */
+.guide-tooltip {
+    display: none !important;
+}
+
+.guide-marker::before {
+    display: none !important;
 }

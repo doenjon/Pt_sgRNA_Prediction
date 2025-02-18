@@ -270,12 +270,14 @@ function createSequenceMap(sequence, guides) {
         
         // Instead of creating a tooltip element, add mouse events
         marker.addEventListener('mouseenter', (e) => {
+            console.log('Mouse entered guide marker:', index + 1);
             // Create tooltip
             const tooltip = document.createElement('div');
             tooltip.className = 'floating-tooltip';
             tooltip.textContent = `Guide ${index + 1}`;
             document.body.appendChild(tooltip);
             activeTooltip = tooltip;
+            console.log('Created tooltip:', tooltip);
             
             // Position tooltip near mouse
             updateTooltipPosition(e, tooltip);
@@ -283,11 +285,13 @@ function createSequenceMap(sequence, guides) {
         
         marker.addEventListener('mousemove', (e) => {
             if (activeTooltip) {
+                console.log('Mouse moving, updating tooltip position');
                 updateTooltipPosition(e, activeTooltip);
             }
         });
         
         marker.addEventListener('mouseleave', () => {
+            console.log('Mouse left guide marker:', index + 1);
             if (activeTooltip) {
                 activeTooltip.remove();
                 activeTooltip = null;
