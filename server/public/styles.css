@@ -243,6 +243,7 @@ code {
     border: 1px solid #e9ecef;
     border-radius: 8px;
     padding: 2rem 1.5rem 1.5rem;
+    overflow: visible !important;
 }
 
 .sequence-ruler {
@@ -304,15 +305,16 @@ code {
     margin-right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    background: white;
-    color: #6c757d;
+    background: pink !important;
+    color: black !important;
     padding: 0 4px;
     border-radius: 10px;
     font-size: 12px;
     border: 1px solid #e9ecef;
     white-space: nowrap;
-    display: none;
-    z-index: 9999;
+    display: block !important;
+    z-index: 9999 !important;
+    pointer-events: none;
 }
 
 .guide-marker:hover .guide-tooltip {
@@ -474,8 +476,5 @@ code {
 }
 
 .guide-marker::before {
-    display: block !important;
-    background: pink !important;
-    color: black !important;
-    z-index: 9999 !important;
+    display: none !important;
 }

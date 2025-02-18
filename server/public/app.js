@@ -271,6 +271,7 @@ function createSequenceMap(sequence, guides) {
         const tooltip = document.createElement('div');
         tooltip.className = 'guide-tooltip';
         tooltip.textContent = `Guide ${index + 1}`;
+        console.log('Created tooltip:', tooltip);
         marker.appendChild(tooltip);
         
         // Calculate position and width
