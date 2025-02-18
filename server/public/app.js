@@ -402,9 +402,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function updateTooltipPosition(event, tooltip) {
-    const x = event.pageX;
-    const y = event.pageY;
-    tooltip.style.left = (x - 50) + 'px';  // Offset to the left of cursor
-    tooltip.style.top = (y - 30) + 'px';   // Offset above cursor
+    // Get the guide marker element that triggered the event
+    const marker = event.target;
+    // Get the marker's position relative to the viewport
+    const rect = marker.getBoundingClientRect();
+    // Get the scroll position
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Position tooltip to the left of the marker
+    tooltip.style.position = 'absolute';
+    tooltip.style.left = (rect.left + scrollX - tooltip.offsetWidth - 10) + 'px';  // 10px offset from marker
+    tooltip.style.top = (rect.top + scrollY + (rect.height / 2) - (tooltip.offsetHeight / 2)) + 'px';
 }
 

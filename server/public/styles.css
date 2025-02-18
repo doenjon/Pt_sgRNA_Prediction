@@ -466,16 +466,17 @@ code {
 }
 
 .floating-tooltip {
-    position: fixed;
-    background: #333;  /* Darker background */
-    color: white;      /* White text */
+    position: absolute;
+    background: #333;
+    color: white;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
     border: 1px solid #e9ecef;
     pointer-events: none;
-    z-index: 99999;    /* Very high z-index */
+    z-index: 99999;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    white-space: nowrap;
 }
 
 /* Remove any conflicting styles */
