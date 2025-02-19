@@ -487,3 +487,19 @@ code {
 .guide-marker::before {
     display: none !important;
 }
+
+/* Update the title styles */
+.main-content h1.display-4 {
+    color: #f8f9fa;  /* Light grey color */
+    font-weight: 300;  /* Keep it light and elegant */
+}
+
+/* Update the subtitle/lead text */
+.main-content .lead {
+    color: rgba(255, 255, 255, 0.8) !important;  /* Slightly transparent white */
+}
+
+/* Override any Bootstrap text-muted class on the homepage */
+.gradient-background .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;  /* Lighter version of text-muted */
+}
