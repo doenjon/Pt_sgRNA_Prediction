@@ -3,14 +3,18 @@ FROM node:16.20.2
 
 WORKDIR /app
 
-# Install nodemon globally
-RUN npm install -g nodemon
+# We no longer need nodemon installed globally
+# RUN npm install -g nodemon
 
 COPY package.json package-lock.json ./
 
-# Install dependencies
+# Install dependencies, including pm2
 RUN npm install
 
 COPY . .
 
-CMD [ "npm", "start" ]
+# Expose the port the app runs on
+EXPOSE 3000
+
+# Start the app with pm2
+CMD [ "pm2-runtime", "start", "ecosystem.config.js" ]
