@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const guideGenerationQueue = require('./queue'); 
 const path = require('path');
 const { pool, initializeDatabase } = require('./config');
+const redisClient = guideGenerationQueue.client;
 
 const app = express();
 const port = 3000;
@@ -71,6 +72,46 @@ app.post('/api/generate', async (req, res) => {
         res.status(500).send('Failed to queue the guide generation');
     } finally {
         client.release();
+    }
+});
+
+app.get('/api/health', async (req, res) => {
+    try {
+        // 1. Check database connection
+        await pool.query('SELECT 1');
+
+        // 2. Check Redis connection
+        await redisClient.ping();
+
+        // 3. Check worker heartbeat
+        const heartbeat = await redisClient.get('worker:heartbeat');
+        if (!heartbeat) {
+            throw new Error('Worker heartbeat not found.');
+        }
+
+        const lastHeartbeat = parseFloat(heartbeat);
+        const now = Date.now() / 1000; // Convert to seconds
+        const timeSinceHeartbeat = now - lastHeartbeat;
+
+        if (timeSinceHeartbeat > 120) { // 2 minutes
+            throw new Error(`Worker heartbeat is too old (${Math.round(timeSinceHeartbeat)}s ago).`);
+        }
+
+        // All checks passed
+        res.status(200).json({
+            status: 'ok',
+            database: 'connected',
+            redis: 'connected',
+            worker: 'healthy',
+            lastHeartbeat: `${Math.round(timeSinceHeartbeat)}s ago`
+        });
+
+    } catch (error) {
+        console.error('Health check failed:', error.message);
+        res.status(503).json({
+            status: 'error',
+            message: error.message
+        });
     }
 });
 

@@ -4,6 +4,7 @@ import os
 import redis
 import logging
 import tempfile
+import time
 
 # Setup logging first
 logging.basicConfig(
@@ -37,6 +38,10 @@ class GuideDesignService:
             port=int(os.getenv('REDIS_PORT', 6379))
         )
         logger.info("Connected to Redis")
+
+    def send_heartbeat(self):
+        self.redis.set('worker:heartbeat', time.time())
+        logger.debug("Sent heartbeat to Redis")
 
     def process_job(self, job_data):
         try:
@@ -114,10 +119,20 @@ class GuideDesignService:
 
     def run(self):
         logger.info("Starting guide design service...")
+        self.send_heartbeat() # Send an initial heartbeat on startup
         while True:
             try:
-                # Get job from Redis queue
-                _, job = self.redis.brpop('guide_design_queue')
+                # Get job from Redis queue with a timeout
+                job_tuple = self.redis.brpop('guide_design_queue', timeout=30)
+
+                # Send a heartbeat on every loop iteration
+                self.send_heartbeat()
+
+                if job_tuple is None:
+                    # Timeout occurred, no job received. Loop will continue.
+                    continue
+
+                _, job = job_tuple
                 job_data = json.loads(job)
                 logger.info(f"Processing job: {job_data['resultId']}")
 
