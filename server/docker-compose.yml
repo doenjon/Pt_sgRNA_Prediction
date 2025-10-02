@@ -67,6 +67,7 @@ services:
         reservations:
           cpus: "0.5"
           memory: "2G"
+    restart: unless-stopped
 
   db:
     image: postgres:latest
