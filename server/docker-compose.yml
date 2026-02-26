@@ -10,7 +10,7 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - GIT_COMMIT=${GIT_COMMIT:-latest}
     ports:
-      - "127.0.0.1:3001:3000"  # Exposed to host so nginx-proxy can route to it
+      - "3001:3000"  # Bind to 0.0.0.0 so host.docker.internal works from nginx-proxy container
     depends_on:
       db:
         condition: service_healthy
@@ -69,7 +69,7 @@ services:
     image: postgres:16
     platform: linux/amd64
     ports:
-      - "127.0.0.1:5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
+      - "5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
