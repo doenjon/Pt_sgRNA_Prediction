@@ -66,7 +66,7 @@ services:
     restart: unless-stopped
 
   db:
-    image: postgres:latest
+    image: postgres:16
     platform: linux/amd64
     ports:
       - "127.0.0.1:5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
