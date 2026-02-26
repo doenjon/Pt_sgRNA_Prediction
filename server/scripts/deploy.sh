@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 # Navigate to the server directory where docker-compose.yml is located
 cd ~/Pt_sgRNA_Prediction/server/
-export GIT_SSH_COMMAND='ssh -i ~/.ssh/github_deploy -o IdentitiesOnly=yes'
+export GIT_SSH_COMMAND='ssh -i ~/.ssh/github_deploy_sgrna -o IdentitiesOnly=yes'
 
 echo "[deploy] Updating repo…"
 git fetch --all --prune
