@@ -12,7 +12,7 @@ services:
       cache_from:
         - app:latest
     ports:
-      - "80:3000"
+      - "127.0.0.1:3001:3000"  # Exposed to host so nginx-proxy can route to it
     depends_on:
       db:
         condition: service_healthy
@@ -73,7 +73,7 @@ services:
     image: postgres:latest
     platform: linux/amd64
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
