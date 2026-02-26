@@ -3,14 +3,12 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfile
       platforms:
         - "linux/amd64"
       args:
         - BUILDKIT_INLINE_CACHE=1
         - GIT_COMMIT=${GIT_COMMIT:-latest}
-      cache_from:
-        - app:latest
     ports:
       - "127.0.0.1:3001:3000"  # Exposed to host so nginx-proxy can route to it
     depends_on:
@@ -44,8 +42,6 @@ services:
       args:
         - BUILDKIT_INLINE_CACHE=1
         - GIT_COMMIT=${GIT_COMMIT:-latest}
-      cache_from:
-        - guide_design:latest
     volumes:
       - ../pt_guide_design:/app/packages/pt_guide_design:ro
       - ../sgrna_scorer:/app/packages/sgrna_scorer:ro

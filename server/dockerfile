@@ -6,7 +6,7 @@ WORKDIR /app
 # We no longer need nodemon installed globally
 # RUN npm install -g nodemon
 
-COPY package.json package-lock.json ./
+COPY package.json ./
 
 # Install dependencies, including pm2
 RUN npm install
