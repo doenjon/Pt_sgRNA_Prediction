@@ -8,6 +8,14 @@ const guideGenerationQueue = new Queue('guide-generation', {
     redis: {
         host: process.env.REDIS_HOST || 'redis',
         port: process.env.REDIS_PORT || 6379,
+    },
+    // Bull keeps every completed and failed job forever by default, so Redis
+    // grew without bound on a host that cannot afford it. The durable record
+    // of a run lives in the `jobs` table in Postgres — result_data and all —
+    // so these entries are only useful as recent operational history.
+    defaultJobOptions: {
+        removeOnComplete: 50,
+        removeOnFail: 100,
     }
 });
 

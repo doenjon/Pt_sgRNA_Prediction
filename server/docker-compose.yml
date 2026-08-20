@@ -71,7 +71,10 @@ services:
     image: postgres:16
     platform: linux/amd64
     ports:
-      - "5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
+      # Loopback-only: nothing off-box needs this, and a published port
+      # bypasses ufw (docker writes its DNAT rules ahead of FORWARD).
+      # Still reachable through an SSH tunnel, which terminates on the host.
+      - "127.0.0.1:5433:5432"  # 5433 to avoid conflict with BuckEuchre postgres on 5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./init-db:/docker-entrypoint-initdb.d
@@ -127,7 +130,10 @@ services:
       - noeviction
     mem_limit: 128m
     ports:
-      - "6379:6379"
+      # Loopback-only. This Redis has no requirepass, and an exposed Redis is
+      # not just a data leak — CONFIG SET dir/dbfilename is a known RCE path.
+      # The app reaches it over the compose network as `redis`.
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
