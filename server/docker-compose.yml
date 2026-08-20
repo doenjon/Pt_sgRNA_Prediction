@@ -26,11 +26,16 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
       - DB_HOST=db
       - NODE_ENV=production
+      # Node derives its heap ceiling from host RAM; on a 2 GB box
+      # shared with several other stacks that is far too generous.
+      - NODE_OPTIONS=--max-old-space-size=192
+      - UV_THREADPOOL_SIZE=2
       - SES_HOST=${SES_HOST}
       - SES_PORT=${SES_PORT}
       - SES_USER=${SES_USER}
       - SES_PASS=${SES_PASS}
       - SES_FROM=${SES_FROM}
+    mem_limit: 384m
     restart: unless-stopped
 
   guide_design:
@@ -60,9 +65,6 @@ services:
         limits:
           cpus: "1.0"
           memory: "4G"
-        reservations:
-          cpus: "0.5"
-          memory: "2G"
     restart: unless-stopped
 
   db:
@@ -79,6 +81,33 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=32MB
+      - -c
+      - effective_cache_size=128MB
+      - -c
+      - maintenance_work_mem=32MB
+      - -c
+      - work_mem=2MB
+      - -c
+      - max_connections=20
+      - -c
+      - max_worker_processes=2
+      - -c
+      - max_parallel_workers=0
+      - -c
+      - max_parallel_workers_per_gather=0
+      - -c
+      - max_parallel_maintenance_workers=0
+      - -c
+      - autovacuum_max_workers=1
+      - -c
+      - max_wal_size=512MB
+      - -c
+      - min_wal_size=80MB
+    mem_limit: 256m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -90,6 +119,13 @@ services:
   redis:
     image: "redis:latest"
     platform: linux/amd64
+    command:
+      - redis-server
+      - --maxmemory
+      - 96mb
+      - --maxmemory-policy
+      - noeviction
+    mem_limit: 128m
     ports:
       - "6379:6379"
     healthcheck:
